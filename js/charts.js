@@ -186,6 +186,10 @@ const Charts = {
       },
       options: {
         ...this.defaultOptions,
+        layout: {
+          padding: { top: 20 },
+          ...(options.layout || {})
+        },
         ...options,
         plugins: {
           ...this.defaultOptions.plugins,
@@ -485,6 +489,10 @@ const Charts = {
       },
       options: {
         ...this.defaultOptions,
+        layout: {
+          padding: { top: 20 },
+          ...(options.layout || {})
+        },
         ...options,
         scales: {
           ...(options.scales || {}),
@@ -532,8 +540,8 @@ const Charts = {
     if (!hasData) { this.showEmpty(canvasId, options.emptyMessage); return null; }
     this.hideEmpty(canvasId);
 
-    // Si es un gráfico de 100% apilado (max: 100), forzamos a que las sumas redondeadas den exactamente 100
-    if (options.scales && options.scales.y && options.scales.y.max === 100) {
+    // Si es un gráfico de 100% apilado (max: 100 o sin max explícito), forzamos a que las sumas redondeadas den exactamente 100
+    if (!options.scales || !options.scales.y || options.scales.y.max === undefined || options.scales.y.max === 100) {
       this._normalize100PercentStackedData(labels, datasets);
     }
 
@@ -553,6 +561,10 @@ const Charts = {
       },
       options: {
         ...this.defaultOptions,
+        layout: {
+          padding: { top: 20 },
+          ...(options.layout || {})
+        },
         ...options,
         plugins: {
           ...this.defaultOptions.plugins,
@@ -711,6 +723,10 @@ const Charts = {
       },
       options: {
         ...this.defaultOptions,
+        layout: {
+          padding: { top: 20 },
+          ...(options.layout || {})
+        },
         ...options,
         plugins: {
           ...this.defaultOptions.plugins,
@@ -1224,7 +1240,7 @@ Charts.datalabelsPlugin = {
             // Draw inside the top of the bar if top margin is tight
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
-            ctx.fillStyle = '#ffffff';
+            ctx.fillStyle = contrastInsideColor;
             ctx.fillText(label, xCenter, yTip + 4);
           } else {
             // Draw outside at the tip of the bar

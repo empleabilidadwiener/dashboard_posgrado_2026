@@ -12,6 +12,8 @@ import {
   formatPercent
 } from './pageUtils.js';
 
+const SKIP_KPI_VALUES = new Set(['no especifica', 'sin dato', 'prefiero no indicarlo', 'no precisa']);
+
 function countWhere(rows, aliases, predicate) {
   const col = window.DataLoader.resolveColumn(aliases);
   if (!col) return { match: 0, total: 0 };
@@ -20,8 +22,10 @@ function countWhere(rows, aliases, predicate) {
   rows.forEach(row => {
     const val = String(row[col] || '').trim();
     if (!val) return;
+    const norm = window.DataLoader.normalize(val);
+    if (SKIP_KPI_VALUES.has(norm)) return;
     total += 1;
-    if (predicate(window.DataLoader.normalize(val))) match += 1;
+    if (predicate(norm)) match += 1;
   });
   return { match, total };
 }
@@ -169,7 +173,8 @@ export async function loadResumenPage(container, data) {
       [{
         label: 'Egresados',
         data: tipoEntries.map(e => e[1]),
-        backgroundColor: tipoEntries.map((_, i) => cfg.chartColors[i % cfg.chartColors.length])
+        backgroundColor: '#000000',
+        borderColor: '#000000'
       }],
       {
         plugins: {

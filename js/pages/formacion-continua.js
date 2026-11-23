@@ -13,8 +13,11 @@ export async function loadFormacionContinuaPage(container, data) {
 
   data.forEach(row => {
     if (colCont && row[colCont]) {
-      contTot += 1;
-      if (window.DataLoader.normalize(row[colCont]) === 'si') contSi += 1;
+      const v = window.DataLoader.normalize(row[colCont]);
+      if (v && v !== 'no especifica') {
+        contTot += 1;
+        if (v === 'si') contSi += 1;
+      }
     }
     if (colRed && row[colRed]) {
       const v = window.DataLoader.normalize(row[colRed]);

@@ -14,12 +14,18 @@ export async function loadSituacionLaboralPage(container, data) {
 
   data.forEach(row => {
     if (colTrabaja && row[colTrabaja]) {
-      totalTrabaja += 1;
-      if (window.DataLoader.normalize(row[colTrabaja]) === 'si') trabajando += 1;
+      const v = window.DataLoader.normalize(row[colTrabaja]);
+      if (v && v !== 'no especifica') {
+        totalTrabaja += 1;
+        if (v === 'si') trabajando += 1;
+      }
     }
     if (colSector && row[colSector]) {
-      totalSector += 1;
-      if (window.DataLoader.normalize(row[colSector]).includes('public')) publica += 1;
+      const v = window.DataLoader.normalize(row[colSector]);
+      if (v && v !== 'no especifica') {
+        totalSector += 1;
+        if (v.includes('public')) publica += 1;
+      }
     }
   });
 

@@ -196,16 +196,20 @@ function getSliceColors(labels, question = {}, mode = 'categorical') {
   }
 
   if (question.orden && question.orden.length) {
-    const scale = ['#000000', '#27272A', '#DCB17C', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
+    const firstNorm = window.DataLoader.normalize(labels[0] || '');
+    const startsWithNo = firstNorm === 'no' || firstNorm.startsWith('no ');
+    const scale = startsWithNo
+      ? ['#D1D5DB', '#DCB17C', '#4B5563', '#000000', '#9CA3AF']
+      : ['#000000', '#4B5563', '#DCB17C', '#9CA3AF', '#D1D5DB', '#E5E7EB'];
     return labels.map((label, i) => {
       const norm = window.DataLoader.normalize(label);
       if (norm === 'otros' || UNDEFINED_LABELS.has(norm)) return '#D1D5DB';
-      const scaledIdx = Math.min(scale.length - 1, Math.round((i / Math.max(1, labels.length - 1)) * (scale.length - 2)));
-      return scale[scaledIdx];
+      const idx = Math.min(scale.length - 1, Math.round((i / Math.max(1, labels.length - 1)) * Math.min(scale.length - 1, labels.length - 1)));
+      return scale[idx];
     });
   }
 
-  const basePalette = ['#000000', '#DCB17C', '#4B5563', '#9CA3AF', '#27272A', '#B88B52'];
+  const basePalette = ['#000000', '#DCB17C', '#4B5563', '#D1D5DB', '#9CA3AF', '#B88B52'];
   return labels.map((label, i) => {
     const norm = window.DataLoader.normalize(label);
     if (norm === 'otros' || UNDEFINED_LABELS.has(norm)) return '#D1D5DB';
@@ -213,19 +217,24 @@ function getSliceColors(labels, question = {}, mode = 'categorical') {
   });
 }
 
-function updateQuestionNote(canvasId, dist) {
+function updateQuestionNote(canvasId, dist, extraNote = '') {
   const noteEl = document.getElementById(`${canvasId}-note`);
   if (!noteEl) return;
-  if (!dist || !dist.excludedTotal) {
+  const parts = [];
+  if (dist && dist.excludedTotal) {
+    const detailText = dist.excludedDetails
+      .slice(0, 3)
+      .map(d => `${formatNumber(d.count)} "${d.label}"`)
+      .join(', ');
+    parts.push(`Base válida: ${formatNumber(dist.total)} respuestas. Se excluyen ${formatNumber(dist.excludedTotal)} registros sin dato útil (${detailText}).`);
+  }
+  if (extraNote) parts.push(extraNote);
+  if (!parts.length) {
     noteEl.hidden = true;
     noteEl.textContent = '';
     return;
   }
-  const detailText = dist.excludedDetails
-    .slice(0, 3)
-    .map(d => `${formatNumber(d.count)} "${d.label}"`)
-    .join(', ');
-  noteEl.textContent = `Base válida: ${formatNumber(dist.total)} respuestas. Se excluyen ${formatNumber(dist.excludedTotal)} registros sin dato útil (${detailText}).`;
+  noteEl.textContent = parts.join(' ');
   noteEl.hidden = false;
 }
 
@@ -369,6 +378,7 @@ export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7)
   const matrix = new Map();
   categories.forEach(cat => matrix.set(cat, new Map(crossValues.map(v => [v, 0]))));
   const totals = new Map(crossValues.map(v => [v, 0]));
+  const mentionTotals = new Map(crossValues.map(v => [v, 0]));
 
   rows.forEach(row => {
     const crossValue = String(row[crossColumn] || '').trim();
@@ -388,12 +398,13 @@ export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7)
       if (!cat || !categories.includes(cat)) return;
       const rowMap = matrix.get(cat);
       rowMap.set(crossValue, rowMap.get(crossValue) + 1);
+      mentionTotals.set(crossValue, mentionTotals.get(crossValue) + 1);
       counted = true;
     });
     if (counted) totals.set(crossValue, totals.get(crossValue) + 1);
   });
 
-  return { categories, crossValues, matrix, totals, dist };
+  return { categories, crossValues, matrix, totals, mentionTotals, dist };
 }
 
 export function renderCrossChart(canvasId, question, rows, crossFilterId) {
@@ -409,8 +420,14 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
     return null;
   }
 
-  updateQuestionNote(canvasId, cross.dist);
-  const { categories, crossValues, matrix, totals } = cross;
+  const isMulti = question.tipo === 'multi';
+  updateQuestionNote(
+    canvasId,
+    cross.dist,
+    isMulti ? 'Cruce apilado expresado como % sobre el total de menciones en cada segmento (selección múltiple).' : ''
+  );
+  const { categories, crossValues, matrix, totals, mentionTotals } = cross;
+  const denomMap = isMulti ? mentionTotals : totals;
   const isManyValues = crossValues.length > 5;
 
   if (wrap) {
@@ -426,9 +443,9 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
   const datasets = categories.map((cat, i) => ({
     label: cat,
     data: crossValues.map(value => {
-      const total = totals.get(value) || 0;
-      if (!total) return 0;
-      return Math.round(((matrix.get(cat).get(value) || 0) / total) * 100);
+      const denom = denomMap.get(value) || 0;
+      if (!denom) return 0;
+      return Math.round(((matrix.get(cat).get(value) || 0) / denom) * 100);
     }),
     rawCounts: crossValues.map(value => matrix.get(cat).get(value) || 0),
     backgroundColor: palette[i]
@@ -451,9 +468,11 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
             const raw = ctx.dataset.rawCounts ? ctx.dataset.rawCounts[ctx.dataIndex] : null;
             const crossVal = ctx.label;
             const baseN = totals.get(crossVal) || 0;
-            return raw != null
-              ? `${ctx.dataset.label}: ${pct}% (${formatNumber(raw)}/${formatNumber(baseN)})`
-              : `${ctx.dataset.label}: ${pct}%`;
+            const denom = denomMap.get(crossVal) || 0;
+            if (raw == null) return `${ctx.dataset.label}: ${pct}%`;
+            return isMulti
+              ? `${ctx.dataset.label}: ${pct}% de menciones (${formatNumber(raw)}/${formatNumber(denom)} menciones · n=${formatNumber(baseN)})`
+              : `${ctx.dataset.label}: ${pct}% (${formatNumber(raw)}/${formatNumber(baseN)})`;
           }
         }
       }
