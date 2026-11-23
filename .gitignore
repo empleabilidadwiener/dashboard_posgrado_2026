@@ -1,0 +1,20 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.vscode/
+.idea/
+
+# Variables de entorno y secretos privados (NUNCA SUBIR A GIT)
+.env
+.env.*
+js/env.js
+js/config.local.js
+
+# Capturas y archivos temporales de desarrollo
+.agent-screenshots/
+*.tmp
+*.log

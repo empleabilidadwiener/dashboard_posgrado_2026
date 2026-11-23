@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Empleabilidad — Posgrado 2026</title>
+  <meta name="description" content="Resultados de la encuesta de empleabilidad de egresados de posgrado — Universidad Norbert Wiener.">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/styles.css?v=20261123_posgrado">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+  <div class="app-container">
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- Barra Superior Móvil -->
+    <header class="mobile-top-bar" id="mobile-top-bar">
+      <div class="mobile-top-left">
+        <img src="logo-universidad.webp" alt="Wiener" class="mobile-top-logo">
+        <div class="mobile-top-brand-text">
+          <span class="mobile-top-title">Posgrado 2026</span>
+          <span class="mobile-top-subtitle">Empleabilidad</span>
+        </div>
+      </div>
+      <div class="mobile-top-actions">
+        <button type="button" class="mobile-top-btn mobile-top-menu-btn" id="mobile-btn-menu" aria-label="Abrir menú">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+    </header>
+
+    <button class="sidebar-expand-btn" id="sidebar-expand-btn" title="Mostrar menú lateral (Ctrl+B)"
+      aria-label="Mostrar menú lateral">
+      <i class="fas fa-bars"></i>
+      <span class="expand-btn-text">Menú</span>
+    </button>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <img src="logo-universidad.webp" alt="Universidad Norbert Wiener" class="sidebar-logo">
+          <button class="sidebar-mobile-close-btn" id="sidebar-mobile-close-btn" aria-label="Cerrar menú lateral">
+            <i class="fas fa-times"></i>
+          </button>
+          <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="Ocultar barra lateral (Ctrl+B)"
+            aria-label="Ocultar barra lateral">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+        </div>
+        <h1>Encuesta de Empleabilidad de Posgrado 2026</h1>
+        <p>Escuela de Posgrado · Universidad Norbert Wiener</p>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">Análisis Principal</div>
+        <a href="#" class="nav-item active" data-page="resumen">
+          <i class="fas fa-compass"></i>
+          <span>Resumen Ejecutivo</span>
+        </a>
+        <a href="#" class="nav-item" data-page="resultados-generales">
+          <i class="fas fa-chart-bar"></i>
+          <span>Resultados Generales</span>
+        </a>
+        <a href="#" class="nav-item" data-page="situacion-laboral">
+          <i class="fas fa-briefcase"></i>
+          <span>Situación Laboral</span>
+        </a>
+        <a href="#" class="nav-item" data-page="empleabilidad">
+          <i class="fas fa-chart-line"></i>
+          <span>Empleabilidad</span>
+        </a>
+        <a href="#" class="nav-item" data-page="formacion-continua">
+          <i class="fas fa-graduation-cap"></i>
+          <span>Formación Continua</span>
+        </a>
+
+        <div class="nav-section">Metodología</div>
+        <a href="#" class="nav-item" data-page="metodologia">
+          <i class="fas fa-microscope"></i>
+          <span>Metodología</span>
+        </a>
+        <a href="#" class="nav-item" data-page="representatividad">
+          <i class="fas fa-clipboard-check"></i>
+          <span>Ficha Técnica</span>
+        </a>
+
+        <div class="nav-section">Cualitativo</div>
+        <a href="#" class="nav-item" data-page="preguntas-abiertas">
+          <i class="fas fa-star"></i>
+          <span>NPS y Cualitativo</span>
+        </a>
+
+        <div class="nav-section">Datos Crudos</div>
+        <a href="#" class="nav-item" data-page="visor-datos">
+          <i class="fas fa-table"></i>
+          <span>Visor de Datos</span>
+        </a>
+
+        <div class="nav-section">Personalización y Control</div>
+        <a href="#" class="nav-item nav-item-editor" id="nav-btn-editor" onclick="Editor.promptAuth(); return false;"
+          title="Activar Modo Edición con clave">
+          <i class="fas fa-edit"></i>
+          <span>Editar Textos</span>
+        </a>
+        <a href="#" class="nav-item nav-item-toggle-view btn-toggle-view-mode" id="nav-btn-toggle-view"
+          onclick="Editor.toggleViewMode(); return false;"
+          title="Alternar entre la versión personalizada y la original">
+          <i class="fas fa-eye"></i>
+          <span id="nav-toggle-view-text">Ver Original</span>
+        </a>
+        <a href="#" class="nav-item nav-item-revert" id="nav-btn-revert"
+          onclick="Editor.revertAllChanges(); return false;"
+          title="Restablecer todos los cambios a la versión original de fábrica">
+          <i class="fas fa-undo"></i>
+          <span>Restablecer cambios</span>
+        </a>
+        <a href="#" class="nav-item nav-item-restore" id="nav-btn-restore"
+          onclick="Editor.restoreBackedUpEdits(); return false;"
+          title="Volver a restablecer mis ediciones respaldadas">
+          <i class="fas fa-redo"></i>
+          <span>Volver a mis ediciones</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span class="sidebar-credit-label">Realizado por</span>
+        <div class="sidebar-credit-badge">
+          <img src="emplea_logo_dark.svg" alt="Dirección de Desarrollo Profesional y Alumni" class="sidebar-area-logo">
+        </div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="filters-bar hidden" id="filters-bar">
+        <div class="filter-group">
+          <label class="filter-label" for="filter-anio">Año de egreso</label>
+          <select class="filter-select" id="filter-anio">
+            <option value="Todos">Todos los años</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label" for="filter-tipo">Tipo de programa</label>
+          <select class="filter-select" id="filter-tipo">
+            <option value="Todos">Todos los tipos</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label" for="filter-programa">Programa</label>
+          <select class="filter-select" id="filter-programa">
+            <option value="Todos">Todos los programas</option>
+          </select>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-filters">
+          <i class="fas fa-rotate-left"></i> Limpiar filtros
+        </button>
+      </div>
+
+      <div id="load-error" class="empty-state hidden" style="padding: 60px 20px; text-align: center;">
+        <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #c53030; margin-bottom: 16px;"></i>
+        <h3 style="color: #111; font-size: 20px; margin-bottom: 8px;">No se pudieron cargar los datos</h3>
+        <p style="color: #666;" id="load-error-detail">
+          Verifica que el archivo de respuestas exista en la carpeta <code>data/</code>.
+        </p>
+      </div>
+
+      <div id="loading" class="loading hidden">
+        <div class="loading-spinner"></div>
+        <p>Procesando datos...</p>
+      </div>
+
+      <div id="page-content"></div>
+    </main>
+
+    <nav class="bottom-nav" id="bottom-nav">
+      <a href="#" class="bottom-nav-item active" data-page="resumen">
+        <i class="fas fa-compass"></i>
+        <span>Resumen</span>
+      </a>
+      <a href="#" class="bottom-nav-item" data-page="resultados-generales">
+        <i class="fas fa-chart-bar"></i>
+        <span>Resultados</span>
+      </a>
+      <a href="#" class="bottom-nav-item" data-page="situacion-laboral">
+        <i class="fas fa-briefcase"></i>
+        <span>Laboral</span>
+      </a>
+      <a href="#" class="bottom-nav-item" data-page="empleabilidad">
+        <i class="fas fa-chart-line"></i>
+        <span>Empleo</span>
+      </a>
+      <button type="button" class="bottom-nav-item" id="bottom-menu-toggle">
+        <i class="fas fa-th-large"></i>
+        <span>Menú</span>
+      </button>
+    </nav>
+
+    <!-- Modal de pantalla completa para gráficos -->
+    <div id="chart-fullscreen-modal" class="chart-fullscreen-modal" style="display: none;">
+      <div class="chart-fullscreen-backdrop" id="chart-fullscreen-backdrop"></div>
+      <div class="chart-fullscreen-dialog">
+        <div class="chart-fullscreen-header">
+          <div class="chart-fullscreen-title-wrap">
+            <span class="chart-fullscreen-badge"><i class="fas fa-search-plus"></i> Vista Ampliada</span>
+            <h3 id="chart-fullscreen-title" class="chart-fullscreen-title">Gráfico en Pantalla Completa</h3>
+            <p id="chart-fullscreen-subtitle" class="chart-fullscreen-subtitle"></p>
+          </div>
+          <div class="chart-fullscreen-controls">
+            <div class="chart-fullscreen-view-toggle">
+              <button type="button" id="btn-fullscreen-toggle-chart" class="active"><i class="fas fa-chart-bar"></i>
+                <span>Gráfico</span></button>
+              <button type="button" id="btn-fullscreen-toggle-table"><i class="fas fa-table"></i> <span>Tabla</span></button>
+            </div>
+            <button type="button" id="btn-close-chart-fullscreen" class="chart-fullscreen-close"
+              aria-label="Cerrar vista completa">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+        <div class="chart-fullscreen-body">
+          <div id="chart-fullscreen-canvas-container" class="chart-fullscreen-canvas-container">
+            <canvas id="canvas-fullscreen-chart"></canvas>
+          </div>
+          <div id="chart-fullscreen-table-container" class="chart-fullscreen-table-container" style="display: none;">
+            <div class="chart-fullscreen-table-info">
+              <i class="fas fa-info-circle"></i> Valores numéricos exactos y porcentajes desglosados.
+            </div>
+            <div class="table-responsive">
+              <table class="fullscreen-data-table" id="table-fullscreen-chart"></table>
+            </div>
+          </div>
+        </div>
+        <div class="chart-fullscreen-footer">
+          <span class="chart-fullscreen-hint"><i class="fas fa-mobile-alt"></i> Tip: en móvil puedes girar la pantalla a
+            horizontal para ver barras densas con mayor amplitud</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-close-chart-fullscreen-footer">Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/vendor/chart.umd.min.js"></script>
+  <script src="js/vendor/xlsx.full.min.js"></script>
+  <script src="js/config.js?v=20261123_posgrado"></script>
+  <script src="js/dataLoader.js?v=20261123_posgrado"></script>
+  <script src="js/charts.js?v=20261123_posgrado"></script>
+  <script src="js/exports.js?v=20261123_posgrado"></script>
+  <script src="js/editor.js?v=20261123_posgrado"></script>
+  <script type="module" src="js/app.js?v=20261123_posgrado"></script>
+</body>
+
+</html>
