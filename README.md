@@ -39,3 +39,4 @@ git push -u origin main
 ```
 
 En GitHub, activar **Settings → Pages → Deploy from a branch (`main` / `/root`)**.
+
