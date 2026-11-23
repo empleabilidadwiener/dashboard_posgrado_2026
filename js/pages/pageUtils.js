@@ -231,7 +231,8 @@ function updateQuestionNote(canvasId, dist) {
 
 export function renderGeneralChart(canvasId, question, rows) {
   const dist = getDistribution(rows, question);
-  const wrap = document.getElementById(canvasId)?.parentElement;
+  const inner = document.getElementById(canvasId)?.parentElement;
+  const wrap = inner?.classList.contains('question-chart-inner') ? inner.parentElement : inner;
   updateQuestionNote(canvasId, dist);
 
   if (!dist.entries.length) {
@@ -239,6 +240,7 @@ export function renderGeneralChart(canvasId, question, rows) {
       wrap.classList.remove('is-donut-square');
       wrap.style.height = '260px';
     }
+    if (inner) inner.style.height = '100%';
     if (window.Charts) window.Charts.showEmpty(canvasId, 'Sin respuestas válidas para esta pregunta con los filtros actuales.');
     return dist;
   }
@@ -255,13 +257,12 @@ export function renderGeneralChart(canvasId, question, rows) {
 
   if (wrap) {
     wrap.classList.toggle('is-donut-square', chartType === 'doughnut');
-    if (chartType === 'horizontal_bar') {
-      wrap.style.height = `${Math.max(300, Math.min(entries.length * 34 + 32, 480))}px`;
-    } else if (chartType === 'doughnut' && entries.length > 5) {
-      wrap.style.height = '340px';
-    } else {
-      wrap.style.height = '320px';
-    }
+    wrap.style.height = (chartType === 'doughnut' && entries.length > 5) ? '350px' : '330px';
+  }
+  if (inner) {
+    inner.style.height = chartType === 'horizontal_bar'
+      ? `${Math.max(300, entries.length * 32 + 24)}px`
+      : '100%';
   }
 
   if (chartType === 'doughnut') {
@@ -397,11 +398,13 @@ export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7)
 
 export function renderCrossChart(canvasId, question, rows, crossFilterId) {
   const cross = getCrossMatrix(rows, question, crossFilterId);
-  const wrap = document.getElementById(canvasId)?.parentElement;
+  const inner = document.getElementById(canvasId)?.parentElement;
+  const wrap = inner?.classList.contains('question-chart-inner') ? inner.parentElement : inner;
   if (wrap) wrap.classList.remove('is-donut-square');
 
   if (!cross) {
     updateQuestionNote(canvasId, null);
+    if (inner) inner.style.height = '100%';
     if (window.Charts) window.Charts.showEmpty(canvasId, 'No hay suficientes datos válidos para este cruce.');
     return null;
   }
@@ -411,11 +414,12 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
   const isManyValues = crossValues.length > 5;
 
   if (wrap) {
-    if (isManyValues) {
-      wrap.style.height = `${Math.max(320, Math.min(crossValues.length * 26, 1100))}px`;
-    } else {
-      wrap.style.height = '320px';
-    }
+    wrap.style.height = isManyValues ? '380px' : '330px';
+  }
+  if (inner) {
+    inner.style.height = isManyValues
+      ? `${Math.max(340, crossValues.length * 28 + 48)}px`
+      : '100%';
   }
 
   const palette = getSliceColors(categories, question, 'categorical');
@@ -505,7 +509,9 @@ export function questionCard(question) {
       <div class="rg-tabs" role="tablist">${tabs}</div>
       ${metaHints.length ? `<div class="question-meta-row"><span>${escapeHTML(metaHints.join(' · '))}</span></div>` : ''}
       <div class="question-chart-wrap" style="overflow-y:auto;">
-        <canvas id="${canvasId}"></canvas>
+        <div class="question-chart-inner">
+          <canvas id="${canvasId}"></canvas>
+        </div>
       </div>
       <p class="rg-note" id="${canvasId}-note" hidden></p>
     </section>

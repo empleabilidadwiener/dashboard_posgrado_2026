@@ -855,10 +855,11 @@ const Charts = {
     const numLabels = (sourceChart.data && sourceChart.data.labels) ? sourceChart.data.labels.length : 0;
     const isHorizontal = sourceChart.config.options?.indexAxis === 'y';
 
-    // Altura dinámica amplia para listas largas de categorías (e.g. 16 carreras)
+    // Altura dinámica amplia para listas largas de categorías (con scroll en .chart-fullscreen-body)
     if (container) {
+      container.style.flex = '0 0 auto';
       if (isHorizontal && numLabels > 8) {
-        container.style.height = `${Math.max(520, numLabels * 42)}px`;
+        container.style.height = `${Math.max(500, numLabels * 32 + 64)}px`;
       } else {
         container.style.height = '480px';
       }
@@ -884,19 +885,33 @@ const Charts = {
       padding: 12
     };
 
-    // Ajustar escalas
-    if (clonedOptions.scales) {
-      Object.keys(clonedOptions.scales).forEach(key => {
-        const scale = clonedOptions.scales[key];
-        if (!scale.ticks) scale.ticks = {};
-        scale.ticks.font = { size: 12, weight: '500' };
-        // No truncar etiquetas en fullscreen
-        scale.ticks.callback = function(val, index) {
+    // Ajustar escalas respetando qué eje es categórico y qué eje es numérico
+    const isPieLike = type === 'doughnut' || type === 'pie' || type === 'polarArea';
+    if (!isPieLike && clonedOptions.scales) {
+      const categoryAxis = isHorizontal ? 'y' : 'x';
+      const valueAxis = isHorizontal ? 'x' : 'y';
+
+      if (clonedOptions.scales[categoryAxis]) {
+        const catScale = clonedOptions.scales[categoryAxis];
+        if (!catScale.ticks) catScale.ticks = {};
+        catScale.ticks.autoSkip = false;
+        catScale.ticks.font = { size: 11.5, weight: '500' };
+        catScale.ticks.callback = function(val, index) {
           const l = this.chart.data.labels;
-          if (l && l[index] !== undefined) return l[index];
-          return val;
+          const raw = (l && l[index] !== undefined) ? l[index] : val;
+          return isHorizontal ? Charts.truncateAxisLabel(raw, 44) : Charts.truncateAxisLabel(raw, 28);
         };
-      });
+      }
+
+      if (clonedOptions.scales[valueAxis]) {
+        const valScale = clonedOptions.scales[valueAxis];
+        if (!valScale.ticks) valScale.ticks = {};
+        valScale.ticks.font = { size: 11.5, weight: '500' };
+        const isPercent = Boolean(valScale.stacked || valScale.max === 100);
+        valScale.ticks.callback = isPercent
+          ? (v => `${v}%`)
+          : (v => Number(v).toLocaleString('es-PE'));
+      }
     }
 
     const ctx = canvas.getContext('2d');
