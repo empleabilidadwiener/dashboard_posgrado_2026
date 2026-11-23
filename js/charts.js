@@ -1133,7 +1133,13 @@ Charts.datalabelsPlugin = {
 
         const bgRaw = Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor[i] : dataset.backgroundColor;
         const bgNorm = String(bgRaw || '').trim().toUpperCase();
-        const isLightBg = ['#9CA3AF', '#A3A3A3', '#A6A6A6', '#ADADAD', '#B3B3B3', '#B5B5B5', '#C9C9C9', '#D1D5DB', '#D4D4D4', '#D9D9D9', '#E3E3E3', '#E5E7EB', '#F1F5F9', '#F3F4F6', '#DCB17C', '#88E788'].includes(bgNorm);
+        let isLightBg = ['#9CA3AF', '#A3A3A3', '#A6A6A6', '#ADADAD', '#B3B3B3', '#B5B5B5', '#C9C9C9', '#D1D5DB', '#D4D4D4', '#D9D9D9', '#E3E3E3', '#E5E7EB', '#F1F5F9', '#F3F4F6', '#DCB17C', '#88E788'].includes(bgNorm);
+        if (!isLightBg && /^#[0-9A-F]{6}$/.test(bgNorm)) {
+          const r = parseInt(bgNorm.slice(1, 3), 16);
+          const g = parseInt(bgNorm.slice(3, 5), 16);
+          const b = parseInt(bgNorm.slice(5, 7), 16);
+          isLightBg = ((0.299 * r + 0.587 * g + 0.114 * b) / 255) > 0.6;
+        }
         const contrastInsideColor = isLightBg ? '#111111' : (opts.color || '#ffffff');
 
         if (isStacked) {

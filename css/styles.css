@@ -3376,6 +3376,53 @@ body.editing-mode-active [data-editable-id]:focus {
 .editor-type-pill.desc { background: #f1f5f9; color: #475569; }
 .editor-type-pill.kpi { background: #fef3c7; color: #92400e; }
 .editor-type-pill.note { background: #fae8ff; color: #86198f; }
+.editor-type-pill.color { background: #f3e8d2; color: #5c3d16; }
+
+.editor-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.editor-color-picker {
+  width: 38px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid #d4d4d4;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.editor-color-hex {
+  font-family: monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.editor-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.editor-color-swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease;
+}
+
+.editor-color-swatch:hover {
+  transform: scale(1.15);
+}
 
 .editor-text-context-label {
   font-size: 11px;

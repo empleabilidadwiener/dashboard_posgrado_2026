@@ -842,6 +842,7 @@ const Editor = {
           <button type="button" class="editor-chip" data-cat="title">Títulos</button>
           <button type="button" class="editor-chip" data-cat="desc">Subtítulos</button>
           <button type="button" class="editor-chip" data-cat="chart">Variables/Leyendas</button>
+          <button type="button" class="editor-chip" data-cat="color">Colores</button>
           <button type="button" class="editor-chip" data-cat="kpi">KPIs</button>
           <button type="button" class="editor-chip" data-cat="note">Notas/Pie</button>
           <button type="button" class="editor-chip" data-cat="custom">Editados</button>
@@ -993,12 +994,13 @@ const Editor = {
         const canvasId = e.target.id;
         const page = (window.App && window.App.currentPage) || 'resumen';
         this.discoverChartCanvasTexts(page);
-        if (this.state.activeCategory !== 'all' && this.state.activeCategory !== 'chart') {
+        if (this.state.activeCategory !== 'all' && this.state.activeCategory !== 'chart' && this.state.activeCategory !== 'color') {
           this.state.activeCategory = 'chart';
           document.querySelectorAll('.editor-chip').forEach(c => c.classList.toggle('active', c.dataset.cat === 'chart'));
         }
         this.renderTextsList();
-        const firstProxy = document.querySelector(`[data-canvas-id="${canvasId}"], [data-donut-canvas-id="${canvasId}"]`);
+        const catFilter = this.state.activeCategory === 'color' ? '[data-editable-category="color"]' : '';
+        const firstProxy = document.querySelector(`[data-canvas-id="${canvasId}"]${catFilter}, [data-canvas-id="${canvasId}"], [data-donut-canvas-id="${canvasId}"]`);
         if (firstProxy && firstProxy.dataset.editableId) {
           const card = document.querySelector(`.editor-text-card[data-text-id="${firstProxy.dataset.editableId}"]`);
           if (card) {
@@ -1014,7 +1016,7 @@ const Editor = {
                 }, 1800);
               }
             });
-            this.showToast('Variables y leyendas del gráfico listas en el panel derecho.', 'info');
+            this.showToast('Variables, leyendas y colores del gráfico listos en el panel derecho.', 'info');
           }
         }
       }
@@ -1114,6 +1116,25 @@ const Editor = {
     this.discoverChartCanvasTexts(page);
   },
 
+  normalizeHexColor(val, fallback = '#000000') {
+    if (!val || typeof val !== 'string') return fallback;
+    const raw = val.trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toLowerCase();
+    const shortMatch = raw.match(/^#([0-9a-fA-F]{3})$/);
+    if (shortMatch) {
+      const [r, g, b] = shortMatch[1].split('');
+      return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+    }
+    const rgbMatch = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+    if (rgbMatch) {
+      const hex = [rgbMatch[1], rgbMatch[2], rgbMatch[3]]
+        .map(n => Math.max(0, Math.min(255, parseInt(n, 10))).toString(16).padStart(2, '0'))
+        .join('');
+      return `#${hex}`;
+    }
+    return fallback;
+  },
+
   discoverChartCanvasTexts(pageName) {
     const page = pageName || (window.App && window.App.currentPage) || 'resumen';
     const pageContent = document.getElementById('page-content');
@@ -1130,6 +1151,13 @@ const Editor = {
       }
       if (!chart._originalDatasetLabels) {
         chart._originalDatasetLabels = (chart.data.datasets || []).map(ds => ds.label || '');
+      }
+      if (!chart._originalDatasetColors) {
+        chart._originalDatasetColors = (chart.data.datasets || []).map(ds =>
+          Array.isArray(ds.backgroundColor)
+            ? ds.backgroundColor.map(c => this.normalizeHexColor(c))
+            : this.normalizeHexColor(ds.backgroundColor || '#000000')
+        );
       }
 
       const parentPanel = canvas.closest('.question-card, .chart-card, .exec-panel');
@@ -1193,6 +1221,79 @@ const Editor = {
         proxy.textContent = currentLbl;
         wrap.appendChild(proxy);
       });
+
+      // Proxies de edición de color (por serie en cruces o general + por segmento/barra en gráficos simples)
+      if (hasMultipleSeries) {
+        (chart.data.datasets || []).forEach((ds, di) => {
+          const origDsColor = Array.isArray(chart._originalDatasetColors[di])
+            ? chart._originalDatasetColors[di][0]
+            : (chart._originalDatasetColors[di] || '#000000');
+          const colorId = `${page}-${canvas.id}-color-ds-${di}`;
+          if (!this.originalTextsCache[colorId]) this.originalTextsCache[colorId] = origDsColor;
+          const dsLbl = ds.label || `Serie ${di + 1}`;
+          const shortDs = dsLbl.length > 26 ? dsLbl.slice(0, 24) + '…' : dsLbl;
+
+          const proxy = document.createElement('span');
+          proxy.className = 'editor-chart-proxy';
+          proxy.style.cssText = 'display:none !important;';
+          proxy.dataset.editableId = colorId;
+          proxy.dataset.editableCategory = 'color';
+          proxy.dataset.canvasId = canvas.id;
+          proxy.dataset.chartKind = 'color-dataset';
+          proxy.dataset.chartIdx = String(di);
+          proxy.dataset.originalText = origDsColor;
+          proxy.dataset.editableLabel = `Color serie (${shortChartTitle}): ${shortDs}`;
+          proxy.textContent = this.normalizeHexColor(Array.isArray(ds.backgroundColor) ? ds.backgroundColor[0] : ds.backgroundColor, origDsColor);
+          wrap.appendChild(proxy);
+        });
+      } else if ((chart.data.datasets || []).length === 1) {
+        const ds0 = chart.data.datasets[0];
+        const origBg0 = chart._originalDatasetColors[0];
+        const defaultUniformHex = Array.isArray(origBg0) ? (origBg0[0] || '#000000') : (origBg0 || '#000000');
+
+        const isPieLike = chart.config?.type === 'doughnut' || chart.config?.type === 'pie' || chart.config?.type === 'polarArea';
+        if (!isPieLike) {
+          const allColorId = `${page}-${canvas.id}-color-all`;
+          if (!this.originalTextsCache[allColorId]) this.originalTextsCache[allColorId] = defaultUniformHex;
+
+          const allProxy = document.createElement('span');
+          allProxy.className = 'editor-chart-proxy';
+          allProxy.style.cssText = 'display:none !important;';
+          allProxy.dataset.editableId = allColorId;
+          allProxy.dataset.editableCategory = 'color';
+          allProxy.dataset.canvasId = canvas.id;
+          allProxy.dataset.chartKind = 'color-all';
+          allProxy.dataset.chartIdx = '0';
+          allProxy.dataset.originalText = defaultUniformHex;
+          allProxy.dataset.editableLabel = `Color todo el gráfico (${shortChartTitle})`;
+          allProxy.textContent = this.normalizeHexColor(Array.isArray(ds0.backgroundColor) ? ds0.backgroundColor[0] : ds0.backgroundColor, defaultUniformHex);
+          wrap.appendChild(allProxy);
+        }
+
+        const sliceCount = (chart._originalLabelsFlat || []).length;
+        for (let li = 0; li < sliceCount; li++) {
+          const origLbl = chart._originalLabelsFlat[li];
+          if (!origLbl) continue;
+          const origSliceHex = Array.isArray(origBg0) ? (origBg0[li] || defaultUniformHex) : defaultUniformHex;
+          const curSliceRaw = Array.isArray(ds0.backgroundColor) ? (ds0.backgroundColor[li] || ds0.backgroundColor[0]) : ds0.backgroundColor;
+          const sliceId = `${page}-${canvas.id}-color-s0-i${li}`;
+          if (!this.originalTextsCache[sliceId]) this.originalTextsCache[sliceId] = origSliceHex;
+          const shortLbl = origLbl.length > 26 ? origLbl.slice(0, 24) + '…' : origLbl;
+
+          const sliceProxy = document.createElement('span');
+          sliceProxy.className = 'editor-chart-proxy';
+          sliceProxy.style.cssText = 'display:none !important;';
+          sliceProxy.dataset.editableId = sliceId;
+          sliceProxy.dataset.editableCategory = 'color';
+          sliceProxy.dataset.canvasId = canvas.id;
+          sliceProxy.dataset.chartKind = 'color-slice';
+          sliceProxy.dataset.chartIdx = String(li);
+          sliceProxy.dataset.originalText = origSliceHex;
+          sliceProxy.dataset.editableLabel = `Color (${shortChartTitle}): ${shortLbl}`;
+          sliceProxy.textContent = this.normalizeHexColor(curSliceRaw, origSliceHex);
+          wrap.appendChild(sliceProxy);
+        }
+      }
     });
   },
 
@@ -1208,14 +1309,57 @@ const Editor = {
       if (!chart || !chart.data) return;
 
       const idx = parseInt(el.dataset.chartIdx, 10);
-      if (el.dataset.chartKind === 'dataset') {
+      const kind = el.dataset.chartKind;
+      const isPieLike = chart.config?.type === 'doughnut' || chart.config?.type === 'pie' || chart.config?.type === 'polarArea';
+
+      if (kind === 'dataset') {
         if (chart.data.datasets && chart.data.datasets[idx]) {
           chart.data.datasets[idx].label = val;
           chart.update('none');
         }
-      } else if (el.dataset.chartKind === 'label') {
+      } else if (kind === 'label') {
         if (chart.data.labels && idx >= 0 && idx < chart.data.labels.length) {
           chart.data.labels[idx] = val.includes('|') ? val.split('|').map(s => s.trim()) : val;
+          chart.update('none');
+        }
+      } else if (kind === 'color-dataset') {
+        const ds = chart.data.datasets && chart.data.datasets[idx];
+        if (ds && /^#[0-9a-fA-F]{6}$/.test(String(val).trim())) {
+          const hex = this.normalizeHexColor(val);
+          ds.backgroundColor = hex;
+          if (!isPieLike) ds.borderColor = hex;
+          chart.update('none');
+        }
+      } else if (kind === 'color-all') {
+        const ds0 = chart.data.datasets && chart.data.datasets[0];
+        if (ds0 && /^#[0-9a-fA-F]{6}$/.test(String(val).trim())) {
+          const hex = this.normalizeHexColor(val);
+          const len = (chart.data.labels || []).length || 1;
+          ds0.backgroundColor = Array(len).fill(hex);
+          if (!isPieLike) ds0.borderColor = Array(len).fill(hex);
+          chart.update('none');
+        }
+      } else if (kind === 'color-slice') {
+        const ds0 = chart.data.datasets && chart.data.datasets[0];
+        if (ds0 && /^#[0-9a-fA-F]{6}$/.test(String(val).trim())) {
+          const hex = this.normalizeHexColor(val);
+          const len = (chart.data.labels || []).length || 1;
+          if (!Array.isArray(ds0.backgroundColor)) {
+            const base = this.normalizeHexColor(ds0.backgroundColor || '#000000');
+            ds0.backgroundColor = Array(len).fill(base);
+          }
+          if (idx >= 0 && idx < ds0.backgroundColor.length) {
+            ds0.backgroundColor[idx] = hex;
+          }
+          if (!isPieLike) {
+            if (!Array.isArray(ds0.borderColor)) {
+              const baseB = this.normalizeHexColor(ds0.borderColor || '#000000');
+              ds0.borderColor = Array(len).fill(baseB);
+            }
+            if (idx >= 0 && idx < ds0.borderColor.length) {
+              ds0.borderColor[idx] = hex;
+            }
+          }
           chart.update('none');
         }
       }
@@ -1375,6 +1519,7 @@ const Editor = {
     }
 
     const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const swatches = ['#000000', '#DCB17C', '#4B5563', '#9CA3AF', '#D1D5DB', '#1D4ED8', '#0F766E', '#B91C1C'];
 
     container.innerHTML = filtered.map(el => {
       const textId = el.dataset.editableId;
@@ -1383,14 +1528,18 @@ const Editor = {
       const originalVal = this.originalTextsCache[textId] || el.dataset.originalText || (el.innerText || el.textContent || '').trim();
       const currentVal = overrides[textId] !== undefined ? overrides[textId] : originalVal;
       const isCustomized = overrides[textId] !== undefined && overrides[textId] !== null;
-      const isLong = currentVal.length > 60 || el.tagName === 'P' || itemCat === 'desc' || itemCat === 'note';
+      const isColor = itemCat === 'color';
+      const isLong = !isColor && (currentVal.length > 60 || el.tagName === 'P' || itemCat === 'desc' || itemCat === 'note');
 
       let catPillName = 'Texto';
       if (itemCat === 'title') catPillName = 'Título';
       else if (itemCat === 'desc') catPillName = 'Subtítulo';
       else if (itemCat === 'chart') catPillName = el.dataset.chartKind === 'label' ? 'Variable' : 'Leyenda';
+      else if (itemCat === 'color') catPillName = el.dataset.chartKind === 'color-all' ? 'Color Gráfico' : 'Color';
       else if (itemCat === 'kpi') catPillName = 'KPI';
       else if (itemCat === 'note') catPillName = 'Nota';
+
+      const hexVal = isColor ? this.normalizeHexColor(currentVal, '#000000') : '';
 
       return `
         <div class="editor-text-card ${isCustomized ? 'is-customized' : ''}" data-text-id="${esc(textId)}">
@@ -1404,27 +1553,65 @@ const Editor = {
                 <i class="fas fa-crosshairs"></i>
               </button>
               ${isCustomized ? `
-                <button type="button" class="editor-btn-card-action btn-revert" data-text-id="${esc(textId)}" title="Restaurar texto original">
+                <button type="button" class="editor-btn-card-action btn-revert" data-text-id="${esc(textId)}" title="Restaurar valor original">
                   <i class="fas fa-undo"></i>
                 </button>
               ` : ''}
             </div>
           </div>
-          ${isLong
-            ? `<textarea class="editor-text-input" data-text-id="${esc(textId)}" rows="2">${esc(currentVal)}</textarea>`
-            : `<input type="text" class="editor-text-input" data-text-id="${esc(textId)}" value="${esc(currentVal)}" />`
+          ${isColor
+            ? `
+              <div class="editor-color-row">
+                <input type="color" class="editor-color-picker" data-text-id="${esc(textId)}" value="${esc(hexVal)}" title="Elegir color" />
+                <input type="text" class="editor-text-input editor-color-hex" data-text-id="${esc(textId)}" value="${esc(hexVal)}" maxlength="7" placeholder="#000000" />
+              </div>
+              <div class="editor-color-swatches">
+                ${swatches.map(sw => `<button type="button" class="editor-color-swatch" data-text-id="${esc(textId)}" data-color="${sw}" style="background:${sw};" title="${sw}"></button>`).join('')}
+              </div>
+            `
+            : (isLong
+              ? `<textarea class="editor-text-input" data-text-id="${esc(textId)}" rows="2">${esc(currentVal)}</textarea>`
+              : `<input type="text" class="editor-text-input" data-text-id="${esc(textId)}" value="${esc(currentVal)}" />`
+            )
           }
-          <div class="editor-original-hint" title="Texto original: ${esc(originalVal)}">
+          <div class="editor-original-hint" title="Valor original: ${esc(originalVal)}">
             Original: <span>${esc(originalVal)}</span>
           </div>
         </div>
       `;
     }).join('');
 
+    const applyColorFromUI = (textId, rawHex) => {
+      const hex = this.normalizeHexColor(rawHex, '');
+      if (!/^#[0-9a-f]{6}$/.test(hex)) return;
+      const targetEl = document.querySelector(`[data-editable-id="${textId}"]`);
+      if (targetEl) this.updateElementOrChartText(targetEl, hex);
+      const picker = container.querySelector(`.editor-color-picker[data-text-id="${textId}"]`);
+      const textInput = container.querySelector(`.editor-color-hex[data-text-id="${textId}"]`);
+      if (picker && picker.value.toLowerCase() !== hex) picker.value = hex;
+      if (textInput && textInput.value.toLowerCase() !== hex) textInput.value = hex;
+      this.saveTextOverrideDebounced(page, textId, hex);
+      this.updateCardCustomizedState(textId, true);
+    };
+
+    container.querySelectorAll('.editor-color-picker').forEach(picker => {
+      picker.addEventListener('input', (e) => applyColorFromUI(e.target.dataset.textId, e.target.value));
+    });
+
+    container.querySelectorAll('.editor-color-swatch').forEach(btn => {
+      btn.addEventListener('click', (e) => applyColorFromUI(e.currentTarget.dataset.textId, e.currentTarget.dataset.color));
+    });
+
     container.querySelectorAll('.editor-text-input').forEach(input => {
       input.addEventListener('input', (e) => {
         const textId = e.target.dataset.textId;
         const val = e.target.value;
+        if (input.classList.contains('editor-color-hex')) {
+          if (/^#[0-9a-fA-F]{6}$/.test(val.trim())) {
+            applyColorFromUI(textId, val.trim());
+          }
+          return;
+        }
         const targetEl = document.querySelector(`[data-editable-id="${textId}"]`);
         if (targetEl) {
           this.updateElementOrChartText(targetEl, val);
@@ -1486,13 +1673,29 @@ const Editor = {
 
     const original = this.originalTextsCache[textId] || '';
     const el = document.querySelector(`[data-editable-id="${textId}"]`);
-    if (el) this.updateElementOrChartText(el, original);
+    if (el) {
+      if (el.dataset.chartKind === 'color-all') {
+        const canvas = document.getElementById(el.dataset.canvasId);
+        const chart = (window.Chart && canvas && typeof window.Chart.getChart === 'function') ? window.Chart.getChart(canvas) : null;
+        if (chart && chart._originalDatasetColors && chart.data.datasets?.[0]) {
+          const orig0 = chart._originalDatasetColors[0];
+          chart.data.datasets[0].backgroundColor = Array.isArray(orig0) ? [...orig0] : orig0;
+          chart.data.datasets[0].borderColor = Array.isArray(orig0) ? [...orig0] : orig0;
+          chart.update('none');
+          el.textContent = original;
+        }
+      } else {
+        this.updateElementOrChartText(el, original);
+      }
+    }
 
     const input = document.querySelector(`.editor-text-input[data-text-id="${textId}"]`);
     if (input) input.value = original;
+    const picker = document.querySelector(`.editor-color-picker[data-text-id="${textId}"]`);
+    if (picker && /^#[0-9a-fA-F]{6}$/.test(original)) picker.value = original;
 
     this.updateCardCustomizedState(textId, false);
-    this.showToast('Texto restaurado al valor original.', 'info');
+    this.showToast('Valor restaurado al original.', 'info');
   },
 
   resetPageTexts() {
