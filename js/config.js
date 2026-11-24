@@ -15,24 +15,28 @@ window.POSGRADO_CONFIG = {
     //   python3 tools/transformar_datos.py --source csv
     encuestas: 'data/respuestas_posgrado_2026.json',
     csvEditable: 'data/respuestas_posgrado_2026.csv',
-    universo: null,
+    universo: 'data/universo_posgrado_2026.json',
+    universoExcel: 'data/Egresados_Posgrado_2026.xlsx',
     evolutivo: null
   },
 
-  // Ficha técnica y parámetros de campo (actualizable cuando Carlos comparta el universo final).
+  // Ficha técnica y parámetros de campo con el Universo Oficial de Posgrado integrado (Egresados_Posgrado_2026.xlsx).
   studyMeta: {
     campoInicio: '28 de octubre de 2026',
     campoFin: '10 de noviembre de 2026',
     campoNota: 'Levantamiento de campo realizado del 28.10 al 10.11.2026 (Encuesta de Egresados Posgrado e Inhouse).',
     universoReferencia: [
-      { tipo: 'Maestría', label: 'Maestrías', universo: 2122, participacion: 25.34, muestraPlanificada: 127 },
-      { tipo: 'Doctorado', label: 'Doctorados', universo: 224, participacion: 2.67, muestraPlanificada: 13 },
-      { tipo: 'Segunda Especialidad', label: 'Segundas Especialidades', universo: 5584, participacion: 66.68, muestraPlanificada: 333 },
-      { tipo: 'Diplomado', label: 'Diplomados', universo: 444, participacion: 5.30, muestraPlanificada: 27 }
+      { tipo: 'Segunda Especialidad', label: 'Segundas Especialidades', universoOficial: 19019, universo2325: 6316, universoSustento: 5584, participacionSustento: 66.68, muestraPlanificada: 333 },
+      { tipo: 'Maestría', label: 'Maestrías', universoOficial: 6365, universo2325: 2290, universoSustento: 2122, participacionSustento: 25.34, muestraPlanificada: 127 },
+      { tipo: 'Doctorado', label: 'Doctorados', universoOficial: 296, universo2325: 0, universoSustento: 224, participacionSustento: 2.67, muestraPlanificada: 13 },
+      { tipo: 'Diplomado', label: 'Diplomados (Ref. Formación Continua)', universoOficial: null, universo2325: null, universoSustento: 444, participacionSustento: 5.30, muestraPlanificada: 27 }
     ],
+    universoTotalOficial: 25680,
+    universoTotal2325: 8606,
+    universoTotal2326: 10817,
     universoTotalReferencia: 8374,
     muestraPlanificadaTotal: 500,
-    universoPendienteNota: 'Cruce preliminar usando el universo base de cohortes 2023–2025 (8,374 egresados). La actualización oficial del universo total será integrada cuando Carlos comparta el padrón consolidado.'
+    universoNota: 'Cruce elaborado con el padrón oficial Egresados_Posgrado_2026.xlsx (25,680 egresados de Posgrado 2005–2026: 19,019 de Segunda Especialidad, 6,365 de Maestría y 296 de Doctorado) y contrastado con el marco muestral del Sustento Metodológico 2023–2025 (8,374 egresados, que incluye 444 de Diplomados).'
   },
 
   // Columnas de los filtros globales.

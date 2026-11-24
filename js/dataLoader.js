@@ -5,6 +5,7 @@
 const DataLoader = {
   rows: [],
   columns: [],
+  universo: null,
   resolvedFilters: {},
   isLoaded: false,
   error: null,
@@ -110,9 +111,78 @@ const DataLoader = {
       this.resolvedFilters[filter.id] = this.resolveColumn(filter.columns);
     });
 
+    if (cfg.dataFiles && cfg.dataFiles.universo) {
+      try {
+        const uRes = await fetch(cfg.dataFiles.universo, { cache: 'no-store' });
+        if (uRes.ok) {
+          this.universo = await uRes.json();
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar el archivo de universo:', e);
+      }
+    }
+
     this.isLoaded = true;
     this.error = null;
     return this.rows;
+  },
+
+  getFilteredUniverse(filters = {}) {
+    if (!this.universo || !Array.isArray(this.universo.cells)) return null;
+    const selAnio = filters.anio && filters.anio !== 'Todos' ? String(filters.anio).trim() : null;
+    const selTipo = filters.tipoPrograma && filters.tipoPrograma !== 'Todos' ? this.normalize(filters.tipoPrograma) : null;
+    const selProg = filters.programa && filters.programa !== 'Todos' ? this.normalize(filters.programa) : null;
+
+    let total = 0;
+    let total2325 = 0;
+    let total2326 = 0;
+    const byTipo = new Map();
+    const byAnio = new Map();
+    const byPrograma = new Map();
+    const bySexo = new Map();
+
+    this.universo.cells.forEach(cell => {
+      const anio = String(cell.a || '').trim();
+      const tipo = String(cell.t || '').trim();
+      const prog = String(cell.p || '').trim();
+      const sexo = String(cell.s || '').trim();
+      const n = Number(cell.n || 0);
+      if (!n) return;
+
+      if (selAnio && anio !== selAnio) return;
+      if (selTipo && this.normalize(tipo) !== selTipo) return;
+      if (selProg && this.normalize(prog) !== selProg) return;
+
+      total += n;
+      const is2325 = anio === '2023' || anio === '2024' || anio === '2025';
+      const is2326 = is2325 || anio === '2026';
+      if (is2325) total2325 += n;
+      if (is2326) total2326 += n;
+
+      if (tipo) {
+        const t = byTipo.get(tipo) || { total: 0, c2325: 0, c2326: 0 };
+        t.total += n;
+        if (is2325) t.c2325 += n;
+        if (is2326) t.c2326 += n;
+        byTipo.set(tipo, t);
+      }
+      if (anio) {
+        byAnio.set(anio, (byAnio.get(anio) || 0) + n);
+      }
+      if (prog) {
+        const pNorm = this.normalize(prog);
+        const p = byPrograma.get(pNorm) || { programa: prog, tipo, total: 0, c2325: 0, c2326: 0 };
+        p.total += n;
+        if (is2325) p.c2325 += n;
+        if (is2326) p.c2326 += n;
+        byPrograma.set(pNorm, p);
+      }
+      if (sexo) {
+        bySexo.set(sexo, (bySexo.get(sexo) || 0) + n);
+      }
+    });
+
+    return { total, total2325, total2326, byTipo, byAnio, byPrograma, bySexo };
   },
 
   getFilterColumn(filterId) {
