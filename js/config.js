@@ -72,17 +72,6 @@ window.POSGRADO_CONFIG = {
   questions: [
     // --- Situación Laboral ---
     {
-      id: 'trabaja_actualmente',
-      titulo: '¿Actualmente se encuentra trabajando?',
-      column: '¿Actualmente se encuentra trabajando?',
-      tipo: 'single',
-      chart: 'doughnut',
-      familia: 'Situación Laboral',
-      icono: 'fas fa-briefcase',
-      pagina: 'situacion-laboral',
-      orden: ['Sí', 'No']
-    },
-    {
       id: 'pea',
       titulo: 'Población Económicamente Activa (PEA / No PEA)',
       column: 'PEA',
