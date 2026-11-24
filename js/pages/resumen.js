@@ -114,7 +114,14 @@ export async function loadResumenPage(container, data) {
     )
   ].join('');
 
-  const featuredIds = ['nivel_empleabilidad', 'condicion_laboral', 'ingreso_mensual', 'satisfaccion_formacion'];
+  const featuredIds = [
+    'nivel_empleabilidad',
+    'personal_cargo',
+    'mejoras_laborales',
+    'tiempo_mejora',
+    'ingreso_mensual',
+    'satisfaccion_formacion'
+  ];
   const topQuestions = featuredIds
     .map(id => questions.find(q => q.id === id))
     .filter(Boolean);
