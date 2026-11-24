@@ -41,23 +41,17 @@ export async function loadResumenPage(container, data) {
 
   // KPIs clave desde columnas amarillas
   const empleabilidad = countWhere(data, ['Nivel de Empleabilidad Final'], v => v === 'si');
-  const trabajando = countWhere(data, ['¿Actualmente se encuentra trabajando?'], v => v === 'si');
   const satisfFormacion = countWhere(
-    data.filter(r => {
-      const col = window.DataLoader.resolveColumn(['¿Cuál es tu nivel de satisfacción con la formación recibida en el programa de posgrado?']);
-      return col && window.DataLoader.normalize(r[col]) !== 'no especifica';
-    }),
+    data,
     ['¿Cuál es tu nivel de satisfacción con la formación recibida en el programa de posgrado?'],
     v => v === 'muy satisfecho' || v === 'satisfecho'
   );
   const contribucion = countWhere(
-    data.filter(r => {
-      const col = window.DataLoader.resolveColumn(['¿En qué medida consideras que el programa de posgrado contribuyó a mejorar tu perfil profesional?']);
-      return col && window.DataLoader.normalize(r[col]) !== 'no especifica';
-    }),
+    data,
     ['¿En qué medida consideras que el programa de posgrado contribuyó a mejorar tu perfil profesional?'],
     v => v.includes('significativamente') || v === 'contribuyo' || v.includes('parcialmente')
   );
+  const peaActiva = countWhere(data, ['PEA'], v => v === 'pea');
 
   const heroKpis = [
     kpiCard(
@@ -66,12 +60,6 @@ export async function loadResumenPage(container, data) {
       `${formatNumber(empleabilidad.match)} empleados de ${formatNumber(empleabilidad.total)} PEA`,
       'fas fa-briefcase',
       'kpi-featured'
-    ),
-    kpiCard(
-      'Trabajando actualmente',
-      trabajando.total ? formatPercent(trabajando.match, trabajando.total, 1) : '—',
-      `${formatNumber(trabajando.match)} de ${formatNumber(trabajando.total)} encuestados`,
-      'fas fa-user-check'
     ),
     kpiCard(
       'Ingreso mensual promedio',
@@ -84,7 +72,15 @@ export async function loadResumenPage(container, data) {
       satisfFormacion.total ? formatPercent(satisfFormacion.match, satisfFormacion.total, 1) : '—',
       `${formatNumber(satisfFormacion.match)} de ${formatNumber(satisfFormacion.total)} respuestas válidas`,
       'fas fa-thumbs-up'
-    )
+    ),
+    nps
+      ? kpiCard(
+        'NPS Posgrado',
+        `${nps.nps > 0 ? '+' : ''}${nps.nps}`,
+        `${formatNumber(nps.promoters)} promotores · ${formatNumber(nps.detractors)} detractores (n=${formatNumber(nps.total)})`,
+        'fas fa-star'
+      )
+      : kpiCard('Preguntas del instrumento', formatNumber(questions.length), 'Configuradas en js/config.js', 'fas fa-clipboard-list')
   ].join('');
 
   const secondaryKpis = [
@@ -93,6 +89,12 @@ export async function loadResumenPage(container, data) {
       formatNumber(data.length),
       `${formatNumber(programs.length)} programas · ${formatNumber(types.length)} tipos`,
       'fas fa-users'
+    ),
+    kpiCard(
+      'Población Activa (PEA)',
+      peaActiva.total ? formatPercent(peaActiva.match, peaActiva.total, 1) : '—',
+      `${formatNumber(peaActiva.match)} PEA · ${formatNumber(peaActiva.total - peaActiva.match)} No PEA`,
+      'fas fa-user-check'
     ),
     kpiCard(
       'Contribución al perfil',
@@ -105,18 +107,10 @@ export async function loadResumenPage(container, data) {
       formatNumber(years.length),
       years.length ? `${years[0]} – ${years[years.length - 1]}` : '',
       'fas fa-calendar-days'
-    ),
-    nps
-      ? kpiCard(
-        'NPS Posgrado',
-        `${nps.nps > 0 ? '+' : ''}${nps.nps}`,
-        `${formatNumber(nps.promoters)} promotores · ${formatNumber(nps.detractors)} detractores (n=${formatNumber(nps.total)})`,
-        'fas fa-star'
-      )
-      : kpiCard('Preguntas del instrumento', formatNumber(questions.length), 'Configuradas en js/config.js', 'fas fa-clipboard-list')
+    )
   ].join('');
 
-  const featuredIds = ['trabaja_actualmente', 'condicion_laboral', 'ingreso_mensual', 'satisfaccion_formacion'];
+  const featuredIds = ['nivel_empleabilidad', 'condicion_laboral', 'ingreso_mensual', 'satisfaccion_formacion'];
   const topQuestions = featuredIds
     .map(id => questions.find(q => q.id === id))
     .filter(Boolean);
