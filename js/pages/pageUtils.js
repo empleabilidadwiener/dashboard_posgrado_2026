@@ -88,11 +88,73 @@ function splitMulti(value) {
     .filter(Boolean);
 }
 
+function resolveIndicatorColumns(question) {
+  if (!Array.isArray(question.indicatorColumns) || !question.indicatorColumns.length) return [];
+  return question.indicatorColumns
+    .map(name => ({ label: cleanDisplayLabel(name), col: window.DataLoader.resolveColumn([name]) }))
+    .filter(item => item.col);
+}
+
+function extractRowValues(row, question, column, indicatorCols) {
+  if (indicatorCols && indicatorCols.length) {
+    const selected = [];
+    indicatorCols.forEach(ind => {
+      const v = window.DataLoader.normalize(row[ind.col]);
+      if (v === 'si') selected.push(ind.label);
+    });
+    if (selected.length) return selected;
+    const raw = column ? row[column] : '';
+    if (raw !== '' && raw != null) {
+      const cleanedRaw = cleanDisplayLabel(raw);
+      if (UNDEFINED_LABELS.has(window.DataLoader.normalize(cleanedRaw))) {
+        return [cleanedRaw];
+      }
+    }
+    return [];
+  }
+  const raw = column ? row[column] : '';
+  if (raw === '' || raw == null) return [];
+  return (question.tipo === 'multi' ? splitMulti(raw) : [String(raw)]).map(cleanDisplayLabel).filter(Boolean);
+}
+
 /** Devuelve el conteo de respuestas válidas de una pregunta (separando no especifica / prefiero no indicarlo). */
 export function getDistribution(rows, question) {
   const column = resolveQuestionColumn(question);
-  if (!column) {
+  const indicatorCols = resolveIndicatorColumns(question);
+  if (!column && !indicatorCols.length) {
     return { column: null, entries: [], total: 0, mentions: 0, excludedTotal: 0, excludedDetails: [] };
+  }
+
+  if (question.tipo === 'numeric_avg') {
+    const tipoCol = window.DataLoader.getFilterColumn('tipoPrograma');
+    const sums = new Map();
+    let validCount = 0;
+    let sumAll = 0;
+    rows.forEach(row => {
+      const num = Number(String(row[column] || '').replace(/[^\d.]/g, ''));
+      if (num > 0) {
+        validCount += 1;
+        sumAll += num;
+        const grp = (tipoCol && String(row[tipoCol] || '').trim()) || 'General';
+        const cur = sums.get(grp) || { sum: 0, n: 0 };
+        cur.sum += num;
+        cur.n += 1;
+        sums.set(grp, cur);
+      }
+    });
+    const entries = [...sums.entries()]
+      .map(([label, o]) => ({ label, count: Math.round(o.sum / o.n), sampleN: o.n }))
+      .sort((a, b) => b.count - a.count);
+    const avgAll = validCount > 0 ? Math.round(sumAll / validCount) : 0;
+    return {
+      column,
+      entries,
+      total: validCount,
+      mentions: validCount,
+      average: avgAll,
+      excludedTotal: 0,
+      excludedDetails: []
+    };
   }
 
   const excludes = new Set((question.excluir || []).map(v => normalizeClean(v)));
@@ -104,10 +166,8 @@ export function getDistribution(rows, question) {
   let excludedRespondents = 0;
 
   rows.forEach(row => {
-    const raw = row[column];
-    if (raw === '' || raw == null) return;
-    const values = question.tipo === 'multi' ? splitMulti(raw) : [String(raw)];
-    const cleaned = values.map(cleanDisplayLabel).filter(Boolean);
+    const cleaned = extractRowValues(row, question, column, indicatorCols);
+    if (!cleaned.length) return;
 
     const validValues = [];
     let rowHasUndefined = false;
@@ -242,7 +302,13 @@ export function renderGeneralChart(canvasId, question, rows) {
   const dist = getDistribution(rows, question);
   const inner = document.getElementById(canvasId)?.parentElement;
   const wrap = inner?.classList.contains('question-chart-inner') ? inner.parentElement : inner;
-  updateQuestionNote(canvasId, dist);
+  updateQuestionNote(
+    canvasId,
+    dist,
+    question.tipo === 'numeric_avg' && dist.average
+      ? `Promedio general ponderado: S/ ${formatNumber(dist.average)} (n = ${formatNumber(dist.total)} con sueldo declarado).`
+      : ''
+  );
 
   if (!dist.entries.length) {
     if (wrap) {
@@ -251,6 +317,43 @@ export function renderGeneralChart(canvasId, question, rows) {
     }
     if (inner) inner.style.height = '100%';
     if (window.Charts) window.Charts.showEmpty(canvasId, 'Sin respuestas válidas para esta pregunta con los filtros actuales.');
+    return dist;
+  }
+
+  if (question.tipo === 'numeric_avg') {
+    const labels = dist.entries.map(e => e.label);
+    const values = dist.entries.map(e => e.count);
+    const sampleNs = dist.entries.map(e => e.sampleN || 0);
+    if (wrap) {
+      wrap.classList.remove('is-donut-square');
+      wrap.style.height = '330px';
+    }
+    if (inner) inner.style.height = '100%';
+    window.Charts.createBarChart(canvasId, labels, [{
+      label: 'Sueldo promedio (S/)',
+      data: values,
+      sampleNs,
+      backgroundColor: '#000000',
+      borderColor: '#000000'
+    }], {
+      yAxisFormat: v => `S/ ${formatNumber(v)}`,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: true,
+          formatter: val => `S/ ${formatNumber(Math.round(val))}`
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const val = ctx.parsed.y;
+              const n = ctx.dataset.sampleNs ? ctx.dataset.sampleNs[ctx.dataIndex] : 0;
+              return `${ctx.label}: S/ ${formatNumber(val)} (n = ${formatNumber(n)})`;
+            }
+          }
+        }
+      }
+    });
     return dist;
   }
 
@@ -342,8 +445,44 @@ export function renderGeneralChart(canvasId, question, rows) {
 /** Matriz de cruce: categorías de respuesta × valores del campo de cruce. */
 export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7) {
   const column = resolveQuestionColumn(question);
+  const indicatorCols = resolveIndicatorColumns(question);
   const crossColumn = window.DataLoader.getFilterColumn(crossFilterId);
-  if (!column || !crossColumn) return null;
+  if ((!column && !indicatorCols.length) || !crossColumn) return null;
+
+  if (question.tipo === 'numeric_avg') {
+    const rawOptions = window.DataLoader.getOptions(crossFilterId);
+    const sumsByCross = new Map();
+    rows.forEach(row => {
+      const cv = String(row[crossColumn] || '').trim();
+      if (!cv) return;
+      const num = Number(String(row[column] || '').replace(/[^\d.]/g, ''));
+      if (num > 0) {
+        const cur = sumsByCross.get(cv) || { sum: 0, n: 0 };
+        cur.sum += num;
+        cur.n += 1;
+        sumsByCross.set(cv, cur);
+      }
+    });
+    let crossValues = rawOptions.filter(v => (sumsByCross.get(v)?.n || 0) > 0);
+    if (crossFilterId === 'programa' || crossFilterId === 'tipoPrograma') {
+      crossValues.sort((a, b) => {
+        const avgA = sumsByCross.get(a).sum / sumsByCross.get(a).n;
+        const avgB = sumsByCross.get(b).sum / sumsByCross.get(b).n;
+        return avgB - avgA;
+      });
+    }
+    if (!crossValues.length) return null;
+    const dist = getDistribution(rows, question);
+    return {
+      isNumericAvg: true,
+      categories: ['Sueldo promedio (S/)'],
+      crossValues,
+      averages: crossValues.map(v => Math.round(sumsByCross.get(v).sum / sumsByCross.get(v).n)),
+      counts: crossValues.map(v => sumsByCross.get(v).n),
+      totals: new Map(crossValues.map(v => [v, sumsByCross.get(v).n])),
+      dist
+    };
+  }
 
   const excludes = new Set((question.excluir || []).map(v => normalizeClean(v)));
   const keepUndefined = Boolean(question.incluirNoEspecifica);
@@ -357,9 +496,8 @@ export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7)
   rows.forEach(row => {
     const cv = String(row[crossColumn] || '').trim();
     if (!cv) return;
-    const raw = row[column];
-    if (raw === '' || raw == null) return;
-    const vals = (question.tipo === 'multi' ? splitMulti(raw) : [String(raw)]).map(cleanDisplayLabel).filter(Boolean);
+    const vals = extractRowValues(row, question, column, indicatorCols);
+    if (!vals.length) return;
     const valid = vals.filter(v => {
       const norm = window.DataLoader.normalize(v);
       return norm !== '' && !excludes.has(norm) && (keepUndefined || !UNDEFINED_LABELS.has(norm));
@@ -383,9 +521,8 @@ export function getCrossMatrix(rows, question, crossFilterId, maxCategories = 7)
   rows.forEach(row => {
     const crossValue = String(row[crossColumn] || '').trim();
     if (!totals.has(crossValue)) return;
-    const raw = row[column];
-    if (raw === '' || raw == null) return;
-    const values = (question.tipo === 'multi' ? splitMulti(raw) : [String(raw)]).map(cleanDisplayLabel).filter(Boolean);
+    const values = extractRowValues(row, question, column, indicatorCols);
+    if (!values.length) return;
     const validValues = values.filter(v => {
       const norm = window.DataLoader.normalize(v);
       return norm !== '' && !excludes.has(norm) && (keepUndefined || !UNDEFINED_LABELS.has(norm));
@@ -418,6 +555,54 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
     if (inner) inner.style.height = '100%';
     if (window.Charts) window.Charts.showEmpty(canvasId, 'No hay suficientes datos válidos para este cruce.');
     return null;
+  }
+
+  if (cross.isNumericAvg) {
+    const isMany = cross.crossValues.length > 5;
+    if (wrap) wrap.style.height = isMany ? '380px' : '330px';
+    if (inner) {
+      inner.style.height = isMany
+        ? `${Math.max(340, cross.crossValues.length * 28 + 48)}px`
+        : '100%';
+    }
+    updateQuestionNote(
+      canvasId,
+      cross.dist,
+      `Promedio general: S/ ${formatNumber(cross.dist.average)} (n = ${formatNumber(cross.dist.total)}).`
+    );
+    const ds = [{
+      label: 'Sueldo promedio (S/)',
+      data: cross.averages,
+      sampleNs: cross.counts,
+      backgroundColor: '#000000',
+      borderColor: '#000000'
+    }];
+    const opts = {
+      xAxisFormat: v => `S/ ${formatNumber(v)}`,
+      yAxisFormat: v => `S/ ${formatNumber(v)}`,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          display: true,
+          formatter: val => `S/ ${formatNumber(Math.round(val))}`
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const val = isMany ? ctx.parsed.x : ctx.parsed.y;
+              const n = ctx.dataset.sampleNs ? ctx.dataset.sampleNs[ctx.dataIndex] : 0;
+              return `${ctx.label}: S/ ${formatNumber(val)} (n = ${formatNumber(n)})`;
+            }
+          }
+        }
+      }
+    };
+    if (isMany) {
+      window.Charts.createHorizontalBarChart(canvasId, cross.crossValues, ds, opts);
+    } else {
+      window.Charts.createBarChart(canvasId, cross.crossValues, ds, opts);
+    }
+    return cross;
   }
 
   const isMulti = question.tipo === 'multi';

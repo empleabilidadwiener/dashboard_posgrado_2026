@@ -98,9 +98,15 @@ export async function loadRepresentatividadPage(container, data) {
   });
 
   const total2325Muestra = [...countByTipo2325.values()].reduce((a, b) => a + b, 0);
-  const samplingRateOficial = totalUnivOficial ? ((data.length / totalUnivOficial) * 100).toFixed(2) : '—';
-  const samplingRate2325 = totalUniv2325 ? ((total2325Muestra / totalUniv2325) * 100).toFixed(2) : '—';
-  const moeOficial = calcMarginOfError(data.length, totalUnivOficial || totalUnivSustento);
+  const diplomadosMuestra = countByTipoAll.get('Diplomado') || 0;
+  const diplomados2325Muestra = countByTipo2325.get('Diplomado') || 0;
+  const muestraGradosSIIU = data.length - diplomadosMuestra;
+  const muestraGrados2325SIIU = total2325Muestra - diplomados2325Muestra;
+  const totalUnivConsolidado = totalUnivOficial + (activeFilters.tipoPrograma && activeFilters.tipoPrograma !== 'Todos' && activeFilters.tipoPrograma !== 'Diplomado' ? 0 : 444);
+  const samplingRateOficial = totalUnivOficial ? ((muestraGradosSIIU / totalUnivOficial) * 100).toFixed(2) : '—';
+  const samplingRateConsolidado = totalUnivConsolidado ? ((data.length / totalUnivConsolidado) * 100).toFixed(2) : '—';
+  const samplingRate2325 = totalUniv2325 ? ((muestraGrados2325SIIU / totalUniv2325) * 100).toFixed(2) : '—';
+  const moeOficial = calcMarginOfError(data.length, totalUnivConsolidado || totalUnivSustento);
   const moeSustento = calcMarginOfError(data.length, totalUnivSustento);
 
   // Tabla 1: Cruce por Tipo de Programa (Columna F)
@@ -263,17 +269,30 @@ export async function loadRepresentatividadPage(container, data) {
           </thead>
           <tbody>
             ${crossTipoRowsHtml}
-            <tr style="font-weight: 800; background: #f5f5f5; border-top: 2px solid #d4d4d4;">
-              <td>TOTAL</td>
+            <tr style="font-weight: 700; background: #fafafa; border-top: 1px solid #d4d4d4;">
+              <td>Subtotal Grados SIIU (Seg. Esp. + Maestría + Doctorado)</td>
               <td class="num">${formatNumber(totalUnivOficial)}</td>
               <td class="num">100.00%</td>
               <td class="num">${formatNumber(totalUniv2325)}</td>
+              <td class="num">${formatNumber(totalUnivSustento - 444)}</td>
+              <td class="num">473</td>
+              <td class="num">${formatNumber(muestraGradosSIIU)}</td>
+              <td class="num">${data.length ? ((muestraGradosSIIU / data.length) * 100).toFixed(1) : '0.0'}%</td>
+              <td class="num">${formatNumber(muestraGrados2325SIIU)}</td>
+              <td class="num">${samplingRateOficial}%</td>
+              <td class="num">${calcMarginOfError(muestraGradosSIIU, totalUnivOficial)}</td>
+            </tr>
+            <tr style="font-weight: 800; background: #f5f5f5; border-top: 2px solid #d4d4d4;">
+              <td>TOTAL GENERAL (Incl. Diplomados ref.)</td>
+              <td class="num">${formatNumber(totalUnivConsolidado)}</td>
+              <td class="num">—</td>
+              <td class="num">${formatNumber(totalUniv2325 + 444)}</td>
               <td class="num">${formatNumber(totalUnivSustento)}</td>
               <td class="num">${formatNumber(meta.muestraPlanificadaTotal || 500)}</td>
               <td class="num">${formatNumber(data.length)}</td>
               <td class="num">100.0%</td>
               <td class="num">${formatNumber(total2325Muestra)}</td>
-              <td class="num">${samplingRateOficial}%</td>
+              <td class="num">${samplingRateConsolidado}%</td>
               <td class="num">${moeOficial}</td>
             </tr>
           </tbody>

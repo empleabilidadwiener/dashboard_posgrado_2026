@@ -46,11 +46,15 @@ export async function loadResumenPage(container, data) {
     ['¿Cuál es tu nivel de satisfacción con la formación recibida en el programa de posgrado?'],
     v => v === 'muy satisfecho' || v === 'satisfecho'
   );
+  const contribColAliases = ['¿En qué medida consideras que el programa de posgrado contribuyó a mejorar tu perfil profesional?'];
   const contribucion = countWhere(
     data,
-    ['¿En qué medida consideras que el programa de posgrado contribuyó a mejorar tu perfil profesional?'],
+    contribColAliases,
     v => v.includes('significativamente') || v === 'contribuyo' || v.includes('parcialmente')
   );
+  const contribSig = countWhere(data, contribColAliases, v => v.includes('significativamente'));
+  const contribPleno = countWhere(data, contribColAliases, v => v === 'contribuyo');
+  const contribParcial = countWhere(data, contribColAliases, v => v.includes('parcialmente'));
   const peaActiva = countWhere(data, ['PEA'], v => v === 'pea');
 
   const heroKpis = [
@@ -97,9 +101,9 @@ export async function loadResumenPage(container, data) {
       'fas fa-user-check'
     ),
     kpiCard(
-      'Contribución al perfil',
+      'Contribución al perfil profesional',
       contribucion.total ? formatPercent(contribucion.match, contribucion.total, 1) : '—',
-      `${formatNumber(contribucion.match)} de ${formatNumber(contribucion.total)} respuestas válidas`,
+      `${formatNumber(contribucion.match)} de ${formatNumber(contribucion.total)} válidos (${formatNumber(contribSig.match)} significativamente · ${formatNumber(contribPleno.match)} contribuyó · ${formatNumber(contribParcial.match)} parcialmente)`,
       'fas fa-rocket'
     ),
     kpiCard(

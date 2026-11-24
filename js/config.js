@@ -199,6 +199,16 @@ window.POSGRADO_CONFIG = {
       ]
     },
     {
+      id: 'sueldo_promedio',
+      titulo: 'Sueldo mensual promedio estimado (S/)',
+      column: 'Sueldo Promedio',
+      tipo: 'numeric_avg',
+      chart: 'bar',
+      familia: 'Ingresos',
+      icono: 'fas fa-coins',
+      pagina: 'situacion-laboral'
+    },
+    {
       id: 'zona_geografica',
       titulo: 'Zona geográfica donde labora',
       column: 'Zona Geográfica de Trabajo',
@@ -308,6 +318,14 @@ window.POSGRADO_CONFIG = {
       id: 'mejoras_laborales',
       titulo: '¿Has tenido mejoras laborales luego de culminar el posgrado? (Múltiple)',
       column: '¿Has tenido mejoras laborales luego de culminar el programa de posgrado? (Puedes marcar más de una opción)',
+      indicatorColumns: [
+        'Ascenso o promoción laboral',
+        'Incremento salarial',
+        'Cambio a un empleo con mejores condiciones',
+        'Mayor especialización o ampliación de funciones',
+        'Aún no he tenido cambios laborales relevantes',
+        'Inicio o fortalecimiento de emprendimiento propio'
+      ],
       tipo: 'multi',
       chart: 'horizontal_bar',
       familia: 'Impacto Salarial y Mejoras',
@@ -367,6 +385,14 @@ window.POSGRADO_CONFIG = {
       id: 'motivacion_posgrado',
       titulo: 'Principal motivación para estudiar el programa de posgrado (Múltiple)',
       column: '¿Cuál fue tu principal motivación para estudiar el programa de posgrado? (Puedes escoger más de una opción)',
+      indicatorColumns: [
+        'Incrementar mis ingresos',
+        'Acceder a mejores oportunidades laborales',
+        'Especializarme en mi área profesional',
+        'Cumplir con un requisito laboral o institucional',
+        'Desarrollar nuevos conocimientos por interés académico',
+        'Emprender o fortalecer mi negocio'
+      ],
       tipo: 'multi',
       chart: 'horizontal_bar',
       familia: 'Motivación y Continuidad Académica',

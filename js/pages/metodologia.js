@@ -107,13 +107,13 @@ export async function loadMetodologiaPage(container, data) {
       </section>
       <section class="card method-card">
         <div class="method-icon"><i class="fas fa-database"></i></div>
-        <h3>Base de datos</h3>
-        <p>${formatNumber(data.length)} registros válidos cargados desde <code>${cfg.dataFiles.encuestas}</code> (519 vía Encuesta de Egresados Posgrado y 121 vía Encuesta Inhouse).</p>
+        <h3>Base de datos y Universo</h3>
+        <p>${formatNumber(data.length)} registros válidos cargados desde <code>${cfg.dataFiles.encuestas}</code> (519 vía Encuesta de Egresados Posgrado y 121 vía Encuesta Inhouse), contrastados con el padrón oficial <code>Egresados_Posgrado_2026.xlsx</code> (25,680 egresados).</p>
       </section>
       <section class="card method-card">
         <div class="method-icon"><i class="fas fa-briefcase"></i></div>
-        <h3>Cálculo de Empleabilidad</h3>
-        <p>La <strong>Tasa de Empleabilidad Final</strong> se calcula sobre la <strong>PEA</strong> (excluyendo a quienes no trabajan por motivos personales, estudios al 100% o salud). La <strong>Ocupación Total</strong> mide empleados sobre el total encuestado.</p>
+        <h3>Cálculo de Empleabilidad (PEA)</h3>
+        <p>El <strong>Nivel de Empleabilidad Final</strong> se calcula exclusivamente sobre la <strong>Población Económicamente Activa (PEA)</strong> (empleados + desempleados en búsqueda activa), excluyendo del denominador a los egresados <strong>No PEA</strong> (dedicados 100% a estudios, motivos personales o salud).</p>
       </section>
       <section class="card method-card">
         <div class="method-icon"><i class="fas fa-calculator"></i></div>
