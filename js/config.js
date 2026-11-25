@@ -121,6 +121,7 @@ window.POSGRADO_CONFIG = {
       icono: 'fas fa-hospital',
       pagina: 'situacion-laboral',
       topN: 10,
+      fullWidth: true,
       excluir: ['No especifica', 'Sin dato']
     },
     {
@@ -132,7 +133,8 @@ window.POSGRADO_CONFIG = {
       familia: 'Cargo y Liderazgo',
       icono: 'fas fa-user-tie',
       pagina: 'situacion-laboral',
-      topN: 10
+      topN: 10,
+      fullWidth: true
     },
     {
       id: 'nivel_cargo',

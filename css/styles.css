@@ -5048,6 +5048,10 @@ body.editing-mode-active [data-editable-id]:focus {
   flex-direction: column;
 }
 
+.question-card.full-width {
+  grid-column: 1 / -1;
+}
+
 .question-card-header {
   display: flex;
   align-items: flex-start;
@@ -5140,7 +5144,7 @@ body.editing-mode-active [data-editable-id]:focus {
 .question-chart-wrap {
   position: relative;
   height: 330px;
-  max-height: 420px;
+  max-height: 520px;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 4px 18px 16px;

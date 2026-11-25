@@ -367,13 +367,25 @@ export function renderGeneralChart(canvasId, question, rows) {
   const chartType = question.chart || (entries.length <= 6 ? 'doughnut' : 'horizontal_bar');
   const palette = getSliceColors(labels, question, chartType === 'doughnut' ? 'categorical' : 'singleBar');
 
+  const hasLongLabels = labels.some(l => String(l || '').length > 28);
+  const perBarPx = hasLongLabels ? 46 : 36;
+  const targetHeight = Math.max(320, entries.length * perBarPx + 36);
+
   if (wrap) {
     wrap.classList.toggle('is-donut-square', chartType === 'doughnut');
-    wrap.style.height = (chartType === 'doughnut' && entries.length > 5) ? '350px' : '330px';
+    if (chartType === 'horizontal_bar') {
+      wrap.style.height = `${Math.min(targetHeight, 500)}px`;
+    } else if (chartType === 'doughnut' && entries.length > 5) {
+      wrap.style.height = '350px';
+    } else if (chartType === 'bar' && labels.some(l => String(l || '').length > 18)) {
+      wrap.style.height = '350px';
+    } else {
+      wrap.style.height = '330px';
+    }
   }
   if (inner) {
     inner.style.height = chartType === 'horizontal_bar'
-      ? `${Math.max(300, entries.length * 32 + 24)}px`
+      ? `${targetHeight}px`
       : '100%';
   }
 
@@ -613,14 +625,14 @@ export function renderCrossChart(canvasId, question, rows, crossFilterId) {
   );
   const { categories, crossValues, matrix, totals, mentionTotals } = cross;
   const denomMap = isMulti ? mentionTotals : totals;
-  const isManyValues = crossValues.length > 5;
+  const isManyValues = crossValues.length > 8;
 
   if (wrap) {
-    wrap.style.height = isManyValues ? '380px' : '330px';
+    wrap.style.height = isManyValues ? '420px' : '350px';
   }
   if (inner) {
     inner.style.height = isManyValues
-      ? `${Math.max(340, crossValues.length * 28 + 48)}px`
+      ? `${Math.max(360, crossValues.length * 36 + 56)}px`
       : '100%';
   }
 
@@ -701,7 +713,7 @@ export function questionCard(question) {
   }
 
   return `
-    <section class="card question-card" data-question-id="${question.id}" id="rg-q-${question.id}">
+    <section class="card question-card ${question.fullWidth ? 'full-width' : ''}" data-question-id="${question.id}" id="rg-q-${question.id}">
       <header class="question-card-header">
         <div class="question-icon"><i class="${question.icono || 'fas fa-circle-question'}"></i></div>
         <div class="question-heading">

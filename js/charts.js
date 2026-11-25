@@ -50,6 +50,42 @@ const Charts = {
     return label.length > limit ? label.slice(0, limit - 1) + '…' : label;
   },
 
+  // Envuelve etiquetas largas en múltiples líneas para Chart.js (devuelve array de líneas)
+  // evitando cortes con "..." y permitiendo que los ejes verticales/horizontales se lean completos.
+  wrapAxisLabel(label, maxCharsPerLine = 28, maxLines = 3) {
+    if (Array.isArray(label)) return label;
+    const text = String(label == null ? '' : label).replace(/\s+/g, ' ').trim();
+    if (!text) return '';
+    if (text.length <= maxCharsPerLine) return text;
+
+    const words = text.replace(/\//g, '/ ').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let current = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      if (!current) {
+        current = word;
+      } else {
+        const joiner = current.endsWith('/') ? '' : ' ';
+        const candidate = `${current}${joiner}${word}`;
+        if (candidate.length <= maxCharsPerLine) {
+          current = candidate;
+        } else {
+          lines.push(current);
+          current = word;
+          if (lines.length === maxLines - 1) {
+            const rest = words.slice(i).join(' ').replace(/\/\s+/g, '/');
+            lines.push(rest.length > maxCharsPerLine ? rest.slice(0, maxCharsPerLine - 1) + '…' : rest);
+            return lines;
+          }
+        }
+      }
+    }
+    if (current) lines.push(current);
+    return lines.length === 1 ? lines[0] : lines;
+  },
+
   // Formatea un % redondeado, salvo el caso confuso de una categoría CON datos (count > 0) cuyo
   // % real es menor a 0.5 y por eso Math.round() la deja en "0%" — visualmente contradictorio con
   // la barra, que sí se dibuja (por chica que sea, proporcional al conteo real). En ese caso
@@ -226,11 +262,17 @@ const Charts = {
           },
           x: {
             ticks: {
+              callback: function(value) {
+                const raw = this.getLabelForValue(value);
+                return labels.length > 8 ? raw : Charts.wrapAxisLabel(raw, 18, 3);
+              },
+              autoSkip: false,
               font: {
                 family: "'N27', 'Inter', sans-serif",
-                size: 11
+                size: 11,
+                lineHeight: 1.15
               },
-              maxRotation: options.maxRotation || 45,
+              maxRotation: options.maxRotation !== undefined ? options.maxRotation : (labels.length > 8 ? 35 : 0),
               minRotation: options.minRotation || 0
             },
             grid: {
@@ -384,12 +426,17 @@ const Charts = {
           },
           y: {
             ticks: {
+              autoSkip: false,
               callback: function(value) {
-                return Charts.truncateAxisLabel(this.getLabelForValue(value));
+                const lineLen = (typeof window !== 'undefined' && window.innerWidth < 640)
+                  ? 22
+                  : ((typeof window !== 'undefined' && window.innerWidth < 1200) ? 28 : 34);
+                return Charts.wrapAxisLabel(this.getLabelForValue(value), lineLen, 3);
               },
               font: {
                 family: "'N27', 'Inter', sans-serif",
-                size: 11
+                size: 11,
+                lineHeight: 1.15
               }
             },
             grid: {
@@ -575,11 +622,17 @@ const Charts = {
           x: {
             stacked: true,
             ticks: {
+              autoSkip: false,
+              callback: function(value) {
+                const raw = this.getLabelForValue(value);
+                return labels.length > 8 ? raw : Charts.wrapAxisLabel(raw, 18, 3);
+              },
               font: {
                 family: "'Inter', sans-serif",
-                size: 11
+                size: 11,
+                lineHeight: 1.15
               },
-              maxRotation: options.maxRotation !== undefined ? options.maxRotation : 45,
+              maxRotation: labels.length > 8 ? 35 : 0,
               minRotation: options.minRotation !== undefined ? options.minRotation : 0
             },
             grid: {
@@ -674,12 +727,16 @@ const Charts = {
             stacked: true,
             ticks: {
               callback: function(value) {
-                return Charts.truncateAxisLabel(this.getLabelForValue(value));
+                const lineLen = (typeof window !== 'undefined' && window.innerWidth < 640)
+                  ? 22
+                  : ((typeof window !== 'undefined' && window.innerWidth < 1200) ? 28 : 34);
+                return Charts.wrapAxisLabel(this.getLabelForValue(value), lineLen, 2);
               },
               font: {
                 family: "'Inter', sans-serif",
-                size: 11,
-                weight: '500'
+                size: 10.5,
+                weight: '500',
+                lineHeight: 1.15
               },
               autoSkip: false
             },
@@ -875,7 +932,7 @@ const Charts = {
     if (container) {
       container.style.flex = '0 0 auto';
       if (isHorizontal && numLabels > 8) {
-        container.style.height = `${Math.max(500, numLabels * 32 + 64)}px`;
+        container.style.height = `${Math.max(520, numLabels * 38 + 72)}px`;
       } else {
         container.style.height = '480px';
       }
@@ -911,11 +968,12 @@ const Charts = {
         const catScale = clonedOptions.scales[categoryAxis];
         if (!catScale.ticks) catScale.ticks = {};
         catScale.ticks.autoSkip = false;
-        catScale.ticks.font = { size: 11.5, weight: '500' };
+        catScale.ticks.maxRotation = (!isHorizontal && numLabels > 8) ? 35 : 0;
+        catScale.ticks.font = { size: 11.5, weight: '500', lineHeight: 1.15 };
         catScale.ticks.callback = function(val, index) {
           const l = this.chart.data.labels;
           const raw = (l && l[index] !== undefined) ? l[index] : val;
-          return isHorizontal ? Charts.truncateAxisLabel(raw, 44) : Charts.truncateAxisLabel(raw, 28);
+          return Charts.wrapAxisLabel(raw, isHorizontal ? 44 : 22, 2);
         };
       }
 
