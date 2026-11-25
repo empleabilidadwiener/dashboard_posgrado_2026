@@ -108,7 +108,7 @@ export async function loadMetodologiaPage(container, data) {
       <section class="card method-card">
         <div class="method-icon"><i class="fas fa-database"></i></div>
         <h3>Base de datos y Universo</h3>
-        <p>${formatNumber(data.length)} registros válidos cargados desde <code>${cfg.dataFiles.encuestas}</code> (519 vía Encuesta de Egresados Posgrado y 121 vía Encuesta Inhouse), contrastados con el padrón oficial <code>Egresados_Posgrado_2026.xlsx</code> (25,680 egresados).</p>
+        <p>${formatNumber(data.length)} registros válidos cargados desde <code>${cfg.dataFiles.encuestas}</code> (519 vía Encuesta de Egresados Posgrado y 7 vía Encuesta Inhouse), contrastados con el universo oficial <code>Universo_Estudio de Empleabilidad Posgrado.xlsx</code> (8,060 egresados en 58 programas).</p>
       </section>
       <section class="card method-card">
         <div class="method-icon"><i class="fas fa-briefcase"></i></div>

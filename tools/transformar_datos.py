@@ -16,8 +16,8 @@ import re
 import openpyxl
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_XLSX = os.path.join(ROOT_DIR, 'data', 'Base de Datos_Estudio de Egresados_Posgrado_VF_2.xlsx')
-DEFAULT_UNIV_XLSX = os.path.join(ROOT_DIR, 'data', 'Egresados_Posgrado_2026.xlsx')
+DEFAULT_XLSX = os.path.join(ROOT_DIR, 'data', 'Base de Datos_Estudio de Egresados_Posgrado_V4_corregido.xlsx')
+DEFAULT_UNIV_XLSX = os.path.join(ROOT_DIR, 'data', 'Universo_Estudio de Empleabilidad Posgrado.xlsx')
 OUT_CSV = os.path.join(ROOT_DIR, 'data', 'respuestas_posgrado_2026.csv')
 OUT_JSON = os.path.join(ROOT_DIR, 'data', 'respuestas_posgrado_2026.json')
 OUT_UNIV_JSON = os.path.join(ROOT_DIR, 'data', 'universo_posgrado_2026.json')

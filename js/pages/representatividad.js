@@ -60,16 +60,13 @@ export async function loadRepresentatividadPage(container, data) {
     ? window.DataLoader.getFilteredUniverse(activeFilters)
     : null;
 
-  const totalUnivOficial = univFiltered ? univFiltered.total : (meta.universoTotalOficial || 25680);
-  const totalUniv2325 = univFiltered ? univFiltered.total2325 : (meta.universoTotal2325 || 8606);
-  const totalUnivSustento = meta.universoTotalReferencia || 8374;
+  const totalUnivOficial = univFiltered ? univFiltered.total : (meta.universoTotalOficial || 8060);
 
   // Contar muestra por Tipo de Programa (Columna F), Año y Programa específico
   const tipoCol = window.DataLoader.getFilterColumn('tipoPrograma');
   const anioCol = window.DataLoader.getFilterColumn('anio');
   const progCol = window.DataLoader.getFilterColumn('programa');
   const countByTipoAll = new Map();
-  const countByTipo2325 = new Map();
   const countByAnioMuestra = new Map();
   const countByProgMuestra = new Map();
   const countByFuente = window.DataLoader.countBy(data, ['Fuente']);
@@ -80,62 +77,41 @@ export async function loadRepresentatividadPage(container, data) {
     const prog = progCol ? String(row[progCol] || '').trim() : '';
     if (tipo) {
       countByTipoAll.set(tipo, (countByTipoAll.get(tipo) || 0) + 1);
-      if (['2023', '2024', '2025'].includes(anio)) {
-        countByTipo2325.set(tipo, (countByTipo2325.get(tipo) || 0) + 1);
-      }
     }
     if (anio) {
       countByAnioMuestra.set(anio, (countByAnioMuestra.get(anio) || 0) + 1);
     }
     if (prog) {
       const pNorm = window.DataLoader.normalize(prog);
-      const cur = countByProgMuestra.get(pNorm) || { programa: prog, tipo, total: 0, c2325: 0, c2326: 0 };
+      const cur = countByProgMuestra.get(pNorm) || { programa: prog, tipo, total: 0 };
       cur.total += 1;
-      if (['2023', '2024', '2025'].includes(anio)) cur.c2325 += 1;
-      if (['2023', '2024', '2025', '2026'].includes(anio)) cur.c2326 += 1;
       countByProgMuestra.set(pNorm, cur);
     }
   });
 
-  const total2325Muestra = [...countByTipo2325.values()].reduce((a, b) => a + b, 0);
-  const diplomadosMuestra = countByTipoAll.get('Diplomado') || 0;
-  const diplomados2325Muestra = countByTipo2325.get('Diplomado') || 0;
-  const muestraGradosSIIU = data.length - diplomadosMuestra;
-  const muestraGrados2325SIIU = total2325Muestra - diplomados2325Muestra;
-  const totalUnivConsolidado = totalUnivOficial + (activeFilters.tipoPrograma && activeFilters.tipoPrograma !== 'Todos' && activeFilters.tipoPrograma !== 'Diplomado' ? 0 : 444);
-  const samplingRateOficial = totalUnivOficial ? ((muestraGradosSIIU / totalUnivOficial) * 100).toFixed(2) : '—';
-  const samplingRateConsolidado = totalUnivConsolidado ? ((data.length / totalUnivConsolidado) * 100).toFixed(2) : '—';
-  const samplingRate2325 = totalUniv2325 ? ((muestraGrados2325SIIU / totalUniv2325) * 100).toFixed(2) : '—';
-  const moeOficial = calcMarginOfError(data.length, totalUnivConsolidado || totalUnivSustento);
-  const moeSustento = calcMarginOfError(data.length, totalUnivSustento);
+  const samplingRateOficial = totalUnivOficial ? ((data.length / totalUnivOficial) * 100).toFixed(2) : '—';
+  const moeOficial = calcMarginOfError(data.length, totalUnivOficial);
 
   // Tabla 1: Cruce por Tipo de Programa (Columna F)
   const crossTipoRowsHtml = refList.map(item => {
     const uEntry = univFiltered?.byTipo?.get(item.tipo);
-    const uOficial = uEntry ? uEntry.total : item.universoOficial;
-    const u2325 = uEntry ? uEntry.c2325 : item.universo2325;
-    const uSustento = item.universoSustento || 0;
-    const pctUnivOficial = (uOficial != null && totalUnivOficial > 0)
+    const uOficial = uEntry ? uEntry.total : (univFiltered ? 0 : item.universoOficial);
+    const pctUnivOficial = (uOficial > 0 && totalUnivOficial > 0)
       ? `${((uOficial / totalUnivOficial) * 100).toFixed(2)}%`
-      : '—';
+      : '0.00%';
     const nAll = countByTipoAll.get(item.tipo) || 0;
-    const n2325 = countByTipo2325.get(item.tipo) || 0;
     const pctMuestra = data.length ? `${((nAll / data.length) * 100).toFixed(1)}%` : '0.0%';
-    const baseNForRate = uOficial != null && uOficial > 0 ? uOficial : uSustento;
-    const cobertura = baseNForRate > 0 ? `${((nAll / baseNForRate) * 100).toFixed(2)}%` : '—';
-    const moe = calcMarginOfError(nAll, baseNForRate);
+    const cobertura = uOficial > 0 ? `${((nAll / uOficial) * 100).toFixed(2)}%` : '—';
+    const moe = calcMarginOfError(nAll, uOficial);
 
     return `
       <tr>
         <td><strong>${escapeHTML(item.label)}</strong></td>
-        <td class="num">${uOficial != null ? formatNumber(uOficial) : '<span title="No incluido en padrón SIIU de grados; ver Marco Sustento">—*</span>'}</td>
+        <td class="num">${formatNumber(uOficial)}</td>
         <td class="num">${pctUnivOficial}</td>
-        <td class="num">${u2325 != null && u2325 > 0 ? formatNumber(u2325) : '—'}</td>
-        <td class="num">${formatNumber(uSustento)}</td>
         <td class="num">${formatNumber(item.muestraPlanificada)}</td>
         <td class="num"><strong>${formatNumber(nAll)}</strong></td>
         <td class="num">${pctMuestra}</td>
-        <td class="num">${formatNumber(n2325)}</td>
         <td class="num">${cobertura}</td>
         <td class="num">${moe}</td>
       </tr>
@@ -166,7 +142,7 @@ export async function loadRepresentatividadPage(container, data) {
     `;
   }).join('');
 
-  // Consolidado por Programa Específico (94 del Universo + Diplomados en Muestra)
+  // Consolidado por Programa Específico (58 programas del Universo Oficial)
   const progCombinedMap = new Map();
   if (univFiltered?.byPrograma) {
     univFiltered.byPrograma.forEach((uProg, normKey) => {
@@ -174,7 +150,6 @@ export async function loadRepresentatividadPage(container, data) {
         programa: uProg.programa,
         tipo: uProg.tipo,
         uTotal: uProg.total,
-        u2326: uProg.c2326,
         mTotal: 0
       });
     });
@@ -187,9 +162,8 @@ export async function loadRepresentatividadPage(container, data) {
     } else {
       progCombinedMap.set(normKey, {
         programa: mProg.programa,
-        tipo: mProg.tipo || 'Diplomado',
-        uTotal: null,
-        u2326: null,
+        tipo: mProg.tipo || '—',
+        uTotal: 0,
         mTotal: mProg.total
       });
     }
@@ -216,7 +190,7 @@ export async function loadRepresentatividadPage(container, data) {
   container.innerHTML = `
     ${pageHeader(
       'Ficha Técnica',
-      'Parámetros de levantamiento de campo, cruce Muestra vs. Universo Oficial de Posgrado (Egresados_Posgrado_2026.xlsx) y sustento metodológico.'
+      'Parámetros de levantamiento de campo, cruce Muestra vs. Universo Oficial de Posgrado y sustento metodológico.'
     )}
 
     <div class="ficha-summary-grid">
@@ -228,19 +202,19 @@ export async function loadRepresentatividadPage(container, data) {
       <article class="ficha-box">
         <span class="ficha-box-label"><i class="fas fa-users"></i> Muestra vs. Universo Oficial</span>
         <span class="ficha-box-value">${formatNumber(data.length)} / ${formatNumber(totalUnivOficial)}</span>
-        <span class="ficha-box-note">Cobertura global: <strong>${samplingRateOficial}%</strong> sobre padrón histórico 2005–2026 (${formatNumber(totalUnivOficial)} egresados) · <strong>${samplingRate2325}%</strong> en cohortes 2023–2025 (${formatNumber(total2325Muestra)} de ${formatNumber(totalUniv2325)}).</span>
+        <span class="ficha-box-note">Tasa de cobertura: <strong>${samplingRateOficial}%</strong> sobre el universo oficial (${formatNumber(totalUnivOficial)} egresados en ${formatNumber(progList.length)} programas). Meta planificada: ${formatNumber(meta.muestraPlanificadaTotal || 500)} encuestas.</span>
       </article>
       <article class="ficha-box">
         <span class="ficha-box-label"><i class="fas fa-bullseye"></i> Precisión global (95% conf.)</span>
         <span class="ficha-box-value">${moeOficial}</span>
-        <span class="ficha-box-note">Margen teórico sobre universo oficial N = ${formatNumber(totalUnivOficial)} (p = 0.5, corrección finita). Sobre marco del sustento (${formatNumber(totalUnivSustento)}): <strong>${moeSustento}</strong>.</span>
+        <span class="ficha-box-note">Margen de error teórico sobre el universo oficial N = ${formatNumber(totalUnivOficial)} (p = 0.5, corrección por población finita). Base total limpia: ${formatNumber(totalAll)} encuestados.</span>
       </article>
     </div>
 
     <div class="info-callout">
       <i class="fas fa-circle-check"></i>
       <div>
-        <strong>Universo Oficial de Posgrado integrado (<code>Egresados_Posgrado_2026.xlsx</code>):</strong>
+        <strong>Universo Oficial integrado (<code>Universo_Estudio de Empleabilidad Posgrado.xlsx</code>):</strong>
         ${escapeHTML(meta.universoNota || '')}
       </div>
     </div>
@@ -248,59 +222,37 @@ export async function loadRepresentatividadPage(container, data) {
     <section class="card table-card" style="margin-bottom: 22px;">
       <div class="section-heading" style="margin-top: 0;">
         <h3>1. Cruce Muestra Alcanzada vs. Universo Oficial por Tipo de Programa (Columna F)</h3>
-        <span class="section-count">Muestra filtrada: ${formatNumber(data.length)} · Universo SIIU filtrado: ${formatNumber(totalUnivOficial)}</span>
+        <span class="section-count">Muestra filtrada: ${formatNumber(data.length)} · Universo filtrado: ${formatNumber(totalUnivOficial)}</span>
       </div>
       <div class="table-responsive">
         <table class="data-table">
           <thead>
             <tr>
               <th>Tipo de programa</th>
-              <th class="num">Universo Oficial (2005–2026)</th>
-              <th class="num">% Univ. Oficial</th>
-              <th class="num">Universo 2023–2025 (SIIU)</th>
-              <th class="num">Marco Sustento (2023–2025)</th>
+              <th class="num">Universo Oficial</th>
+              <th class="num">% Universo</th>
               <th class="num">Muestra planificada</th>
-              <th class="num">Muestra lograda (Total)</th>
+              <th class="num">Muestra lograda</th>
               <th class="num">% Muestra</th>
-              <th class="num">Muestra 2023–2025</th>
               <th class="num">Tasa cobertura</th>
               <th class="num">Margen error (95%)</th>
             </tr>
           </thead>
           <tbody>
             ${crossTipoRowsHtml}
-            <tr style="font-weight: 700; background: #fafafa; border-top: 1px solid #d4d4d4;">
-              <td>Subtotal Grados SIIU (Seg. Esp. + Maestría + Doctorado)</td>
+            <tr style="font-weight: 800; background: #f5f5f5; border-top: 2px solid #d4d4d4;">
+              <td>TOTAL GENERAL</td>
               <td class="num">${formatNumber(totalUnivOficial)}</td>
               <td class="num">100.00%</td>
-              <td class="num">${formatNumber(totalUniv2325)}</td>
-              <td class="num">${formatNumber(totalUnivSustento - 444)}</td>
-              <td class="num">473</td>
-              <td class="num">${formatNumber(muestraGradosSIIU)}</td>
-              <td class="num">${data.length ? ((muestraGradosSIIU / data.length) * 100).toFixed(1) : '0.0'}%</td>
-              <td class="num">${formatNumber(muestraGrados2325SIIU)}</td>
-              <td class="num">${samplingRateOficial}%</td>
-              <td class="num">${calcMarginOfError(muestraGradosSIIU, totalUnivOficial)}</td>
-            </tr>
-            <tr style="font-weight: 800; background: #f5f5f5; border-top: 2px solid #d4d4d4;">
-              <td>TOTAL GENERAL (Incl. Diplomados ref.)</td>
-              <td class="num">${formatNumber(totalUnivConsolidado)}</td>
-              <td class="num">—</td>
-              <td class="num">${formatNumber(totalUniv2325 + 444)}</td>
-              <td class="num">${formatNumber(totalUnivSustento)}</td>
               <td class="num">${formatNumber(meta.muestraPlanificadaTotal || 500)}</td>
               <td class="num">${formatNumber(data.length)}</td>
               <td class="num">100.0%</td>
-              <td class="num">${formatNumber(total2325Muestra)}</td>
-              <td class="num">${samplingRateConsolidado}%</td>
+              <td class="num">${samplingRateOficial}%</td>
               <td class="num">${moeOficial}</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="rg-note" style="padding: 10px 4px 0;">
-        * El padrón oficial SIIU (<code>Egresados_Posgrado_2026.xlsx</code>, N = 25,680) comprende los grados y segundas especialidades de Posgrado (Segunda Especialidad: 19,019; Maestría: 6,365; Doctorado: 296). Para Diplomados (n = 31 en la encuesta) la cobertura y margen de error se calculan sobre el universo de referencia del Sustento Metodológico (N = 444).
-      </p>
     </section>
 
     <div class="tables-grid" style="margin-bottom: 22px;">
@@ -361,8 +313,7 @@ export async function loadRepresentatividadPage(container, data) {
             <tr>
               <th>Programa / Especialidad</th>
               <th>Tipo</th>
-              <th class="num">Universo Oficial (2005–2026)</th>
-              <th class="num">Universo (2023–2026)</th>
+              <th class="num">Universo Oficial</th>
               <th class="num">Muestra lograda</th>
               <th class="num">% Muestra</th>
               <th class="num">Tasa cobertura</th>
@@ -377,16 +328,16 @@ export async function loadRepresentatividadPage(container, data) {
     <section class="card sustento-card">
       <h3><i class="fas fa-file-lines"></i> Sustento metodológico de la muestra y alcance estadístico</h3>
       <p>
-        El padrón histórico oficial de la Escuela de Posgrado (<code>Egresados_Posgrado_2026.xlsx</code>) registra un universo acumulado de <strong>25,680 egresados</strong> entre 2005 y 2026 (<strong>19,019</strong> en Segundas Especialidades, <strong>6,365</strong> en Maestrías y <strong>296</strong> en Doctorados), de los cuales <strong>8,606</strong> corresponden a las cohortes 2023–2025 y <strong>10,817</strong> al periodo 2023–2026. Para el diseño muestral de referencia (cohortes 2023–2025, incluyendo Diplomados) se estableció un marco objetivo de <strong>8,374 egresados</strong> y una meta de <strong>500 encuestas completas</strong> asignadas proporcionalmente (<code>nₕ = (Nₕ / N) × 500</code>), superándose la meta con <strong>${formatNumber(totalAll)} encuestas válidas</strong> (${formatNumber(data.length)} con los filtros actuales).
+        El padrón oficial del estudio (<code>Universo_Estudio de Empleabilidad Posgrado.xlsx</code>) comprende una población objetivo de <strong>8,060 egresados</strong> distribuidos en <strong>58 programas</strong>: <strong>5,178</strong> de Segundas Especialidades (64.24%), <strong>2,300</strong> de Maestrías (28.54%), <strong>308</strong> de Doctorados (3.82%) y <strong>274</strong> de Diplomados (3.40%). Para el diseño muestral se planteó una meta de <strong>500 encuestas completas</strong> asignadas proporcionalmente según el tamaño de cada estrato (<code>nₕ = (Nₕ / N) × 500</code>), alcanzándose finalmente un levantamiento efectivo y depurado de <strong>${formatNumber(totalAll)} encuestas válidas</strong> (${formatNumber(data.length)} con los filtros actuales).
       </p>
       <p>
-        <strong>Alcance y precisión estadística:</strong> Con la muestra efectiva alcanzada de <strong>${formatNumber(data.length)} encuestados</strong>, el margen de error teórico agregado al 95% de confianza (p = 0.5 y corrección por población finita) es de <strong>${moeOficial}</strong> respecto al padrón general (N = ${formatNumber(totalUnivOficial)}) y de <strong>${moeSustento}</strong> respecto al marco de referencia 2023–2025 (N = ${formatNumber(totalUnivSustento)}).
+        <strong>Alcance y precisión estadística:</strong> Con la muestra efectiva alcanzada de <strong>${formatNumber(data.length)} encuestados</strong> (tasa de cobertura global de <strong>${samplingRateOficial}%</strong>), el margen de error teórico agregado al 95% de confianza (p = 0.5 y corrección por población finita) se ubica en <strong>${moeOficial}</strong> respecto al universo oficial (N = ${formatNumber(totalUnivOficial)}).
       </p>
       <p>
-        En consonancia con la estructura del universo, la muestra concentra su mayor volumen en <strong>Segundas Especialidades</strong> (n = ${formatNumber(countByTipoAll.get('Segunda Especialidad') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Segunda Especialidad')?.total ?? 19019)}) y <strong>Maestrías</strong> (n = ${formatNumber(countByTipoAll.get('Maestría') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Maestría')?.total ?? 6365)}). En estratos de menor tamaño como <strong>Doctorados</strong> (n = ${formatNumber(countByTipoAll.get('Doctorado') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Doctorado')?.total ?? 296)}; todas las respuestas del padrón registradas entre las cohortes 2012–2021) y <strong>Diplomados</strong> (n = ${formatNumber(countByTipoAll.get('Diplomado') || 0)} de N = 444 ref.), la lectura desagregada tiene carácter descriptivo y exploratorio.
+        En consonancia con la estructura real del universo, la muestra guarda una alta proporcionalidad en <strong>Segundas Especialidades</strong> (n = ${formatNumber(countByTipoAll.get('Segunda Especialidad') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Segunda Especialidad')?.total ?? 5178)}) y <strong>Maestrías</strong> (n = ${formatNumber(countByTipoAll.get('Maestría') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Maestría')?.total ?? 2300)}). En estratos de menor tamaño poblacional como <strong>Doctorados</strong> (n = ${formatNumber(countByTipoAll.get('Doctorado') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Doctorado')?.total ?? 308)}) y <strong>Diplomados</strong> (n = ${formatNumber(countByTipoAll.get('Diplomado') || 0)} de N = ${formatNumber(univFiltered?.byTipo?.get('Diplomado')?.total ?? 274)}), los márgenes de error teóricos son más amplios y las lecturas desagregadas tienen carácter descriptivo.
       </p>
       <ul>
-        <li><strong>Control de calidad y cobertura:</strong> Base consolidada a partir de Encuesta de Egresados Posgrado (${formatNumber(countByFuente.get('Encuesta de Egresados Posgrado') || 519)} registros) y Encuesta Inhouse (${formatNumber(countByFuente.get('Encuesta Inhouse') || 121)} registros), cubriendo <strong>${formatNumber(progsWithSample)} programas específicos</strong>.</li>
+        <li><strong>Control de calidad y cobertura:</strong> Base depurada V4 consolidada a partir de Encuesta de Egresados Posgrado (${formatNumber(countByFuente.get('Encuesta de Egresados Posgrado') || 519)} registros) y Encuesta Inhouse (${formatNumber(countByFuente.get('Encuesta Inhouse') || 7)} registros), cubriendo <strong>${formatNumber(progsWithSample)} programas específicos</strong> con cruce del 100% frente al universo oficial.</li>
         <li><strong>Lectura responsable:</strong> La inferencia principal corresponde al conjunto agregado de Posgrado; las aperturas por programa específico con tamaño muestral reducido deben interpretarse de forma referencial.</li>
         <li><strong>Privacidad:</strong> Información tratada de forma confidencial conforme a la Ley N.º 29733 de Protección de Datos Personales.</li>
       </ul>
@@ -400,8 +351,8 @@ export async function loadRepresentatividadPage(container, data) {
     </div>
   `;
 
-  // Gráfico comparativo por Año de Egreso (cohortes desde 2012 hasta 2026)
-  const chartYears = [...allYears].sort((a, b) => Number(a) - Number(b)).filter(y => Number(y) >= 2012);
+  // Gráfico comparativo por Año de Egreso
+  const chartYears = [...allYears].sort((a, b) => Number(a) - Number(b));
   if (chartYears.length && window.Charts) {
     const pctMuestraData = chartYears.map(y => {
       const m = countByAnioMuestra.get(y) || 0;
@@ -465,13 +416,13 @@ export async function loadRepresentatividadPage(container, data) {
     }
 
     if (!filtered.length) {
-      tbodyEl.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#71717a;padding:18px;">No se encontraron programas con el filtro actual.</td></tr>';
+      tbodyEl.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#71717a;padding:18px;">No se encontraron programas con el filtro actual.</td></tr>';
       return;
     }
 
     tbodyEl.innerHTML = filtered.map(item => {
       const pctM = data.length > 0 && item.mTotal > 0 ? `${((item.mTotal / data.length) * 100).toFixed(1)}%` : '0.0%';
-      const cob = item.uTotal && item.uTotal > 0 && item.mTotal > 0
+      const cob = item.uTotal > 0 && item.mTotal > 0
         ? `${((item.mTotal / item.uTotal) * 100).toFixed(2)}%`
         : '—';
       const moe = item.mTotal > 0 ? calcMarginOfError(item.mTotal, item.uTotal) : '—';
@@ -479,8 +430,7 @@ export async function loadRepresentatividadPage(container, data) {
         <tr>
           <td><strong>${escapeHTML(item.programa)}</strong></td>
           <td>${escapeHTML(item.tipo || '—')}</td>
-          <td class="num">${item.uTotal != null ? formatNumber(item.uTotal) : '—*'}</td>
-          <td class="num">${item.u2326 != null ? formatNumber(item.u2326) : '—'}</td>
+          <td class="num">${formatNumber(item.uTotal)}</td>
           <td class="num"><strong>${formatNumber(item.mTotal)}</strong></td>
           <td class="num">${pctM}</td>
           <td class="num">${cob}</td>

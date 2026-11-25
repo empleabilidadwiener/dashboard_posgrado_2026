@@ -1,7 +1,8 @@
 /*
  * config.js — Configuración central del Dashboard de Empleabilidad Posgrado 2026.
  *
- * Fuente oficial: data/Base de Datos_Estudio de Egresados_Posgrado_VF_2.xlsx
+ * Fuente oficial: data/Base de Datos_Estudio de Egresados_Posgrado_V4_corregido.xlsx
+ * Universo oficial: data/Universo_Estudio de Empleabilidad Posgrado.xlsx
  * Columnas configuradas según las columnas resaltadas en amarillo en la base
  * y el Instrumento oficial de Posgrado (VR_FINAL).
  */
@@ -16,27 +17,24 @@ window.POSGRADO_CONFIG = {
     encuestas: 'data/respuestas_posgrado_2026.json',
     csvEditable: 'data/respuestas_posgrado_2026.csv',
     universo: 'data/universo_posgrado_2026.json',
-    universoExcel: 'data/Egresados_Posgrado_2026.xlsx',
+    universoExcel: 'data/Universo_Estudio de Empleabilidad Posgrado.xlsx',
     evolutivo: null
   },
 
-  // Ficha técnica y parámetros de campo con el Universo Oficial de Posgrado integrado (Egresados_Posgrado_2026.xlsx).
+  // Ficha técnica y parámetros de campo con el Universo Oficial consolidado (Universo_Estudio de Empleabilidad Posgrado.xlsx).
   studyMeta: {
     campoInicio: '28 de octubre de 2026',
     campoFin: '10 de noviembre de 2026',
     campoNota: 'Levantamiento de campo realizado del 28.10 al 10.11.2026 (Encuesta de Egresados Posgrado e Inhouse).',
     universoReferencia: [
-      { tipo: 'Segunda Especialidad', label: 'Segundas Especialidades', universoOficial: 19019, universo2325: 6316, universoSustento: 5584, participacionSustento: 66.68, muestraPlanificada: 333 },
-      { tipo: 'Maestría', label: 'Maestrías', universoOficial: 6365, universo2325: 2290, universoSustento: 2122, participacionSustento: 25.34, muestraPlanificada: 127 },
-      { tipo: 'Doctorado', label: 'Doctorados', universoOficial: 296, universo2325: 0, universoSustento: 224, participacionSustento: 2.67, muestraPlanificada: 13 },
-      { tipo: 'Diplomado', label: 'Diplomados (Ref. Formación Continua)', universoOficial: null, universo2325: null, universoSustento: 444, participacionSustento: 5.30, muestraPlanificada: 27 }
+      { tipo: 'Segunda Especialidad', label: 'Segundas Especialidades', universoOficial: 5178, participacion: 64.24, muestraPlanificada: 333 },
+      { tipo: 'Maestría', label: 'Maestrías', universoOficial: 2300, participacion: 28.54, muestraPlanificada: 127 },
+      { tipo: 'Doctorado', label: 'Doctorados', universoOficial: 308, participacion: 3.82, muestraPlanificada: 13 },
+      { tipo: 'Diplomado', label: 'Diplomados', universoOficial: 274, participacion: 3.40, muestraPlanificada: 27 }
     ],
-    universoTotalOficial: 25680,
-    universoTotal2325: 8606,
-    universoTotal2326: 10817,
-    universoTotalReferencia: 8374,
+    universoTotalOficial: 8060,
     muestraPlanificadaTotal: 500,
-    universoNota: 'Cruce elaborado con el padrón oficial Egresados_Posgrado_2026.xlsx (25,680 egresados de Posgrado 2005–2026: 19,019 de Segunda Especialidad, 6,365 de Maestría y 296 de Doctorado) y contrastado con el marco muestral del Sustento Metodológico 2023–2025 (8,374 egresados, que incluye 444 de Diplomados).'
+    universoNota: 'Cruce elaborado con el padrón oficial Universo_Estudio de Empleabilidad Posgrado.xlsx (8,060 egresados en 58 programas: 5,178 Segundas Especialidades, 2,300 Maestrías, 308 Doctorados y 274 Diplomados) frente a la base depurada V4 (526 encuestas válidas).'
   },
 
   // Columnas de los filtros globales.

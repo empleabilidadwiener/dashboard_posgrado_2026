@@ -5,7 +5,7 @@ Panel interactivo de resultados de la **Encuesta de Egresados de Posgrado 2026**
 ## Características principales
 
 - **Identidad visual de Posgrado**: Paleta institucional negro (`#000000`) y acento arena dorado (`#DCB17C`) con contraste WCAG 2.1 AA.
-- **Formato de datos nativo**: Conversión automática desde Excel a CSV y JSON mediante [`tools/transformar_datos.py`](tools/transformar_datos.py) (`640` registros en `data/respuestas_posgrado_2026.csv` y `data/respuestas_posgrado_2026.json`).
+- **Formato de datos nativo**: Conversión automática desde Excel a CSV y JSON mediante [`tools/transformar_datos.py`](tools/transformar_datos.py) (`526` registros en `data/respuestas_posgrado_2026.csv` y `data/respuestas_posgrado_2026.json`, y universo oficial de `8,060` egresados en `data/universo_posgrado_2026.json`).
 - **Resultados por pregunta y cruces**: `33` preguntas del instrumento con vista general y cruces por **Año de egreso**, **Tipo de programa (columna F)** y **Programa específico**.
 - **Edición en vivo y exportación**: Modo de edición de textos (`data/custom_texts.json`) con sincronización opcional vía GitHub API y exportación en CSV/JSON/Excel.
 - **Ficha técnica y representatividad**: Documentación del levantamiento de campo (`28.10 – 10.11.2026`), sustento metodológico y tablas de composición muestral.
