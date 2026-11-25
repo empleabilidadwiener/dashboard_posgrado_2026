@@ -35,7 +35,6 @@ export async function loadResumenPage(container, data) {
   const questions = cfg.questions || [];
   const programs = window.DataLoader.getOptions('programa');
   const types = window.DataLoader.getOptions('tipoPrograma');
-  const years = window.DataLoader.getOptions('anio');
   const nps = computeNPS(data);
   const salary = computeAverageSalary(data);
 
@@ -103,14 +102,8 @@ export async function loadResumenPage(container, data) {
     kpiCard(
       'Contribución al perfil profesional',
       contribucion.total ? formatPercent(contribucion.match, contribucion.total, 1) : '—',
-      `${formatNumber(contribucion.match)} de ${formatNumber(contribucion.total)} válidos (${formatNumber(contribSig.match)} significativamente · ${formatNumber(contribPleno.match)} contribuyó · ${formatNumber(contribParcial.match)} parcialmente)`,
+      `${formatNumber(contribucion.match)} de ${formatNumber(contribucion.total)} válidos señalan mejora profesional: ${formatNumber(contribSig.match)} significativamente, ${formatNumber(contribPleno.match)} contribuyó y ${formatNumber(contribParcial.match)} parcialmente`,
       'fas fa-rocket'
-    ),
-    kpiCard(
-      'Años de egreso',
-      formatNumber(years.length),
-      years.length ? `${years[0]} – ${years[years.length - 1]}` : '',
-      'fas fa-calendar-days'
     )
   ].join('');
 
@@ -138,27 +131,6 @@ export async function loadResumenPage(container, data) {
     <div class="resumen-hero-kpis">${heroKpis}</div>
     <div class="kpi-grid">${secondaryKpis}</div>
 
-    <div class="chart-grid">
-      <section class="chart-card">
-        <div class="chart-header">
-          <div>
-            <h3 class="chart-title">Distribución por Tipo de Programa (Columna F)</h3>
-            <p class="chart-subtitle">Participación de los egresados encuestados según tipo de programa</p>
-          </div>
-        </div>
-        <div class="chart-container"><canvas id="resumen-chart-tipo"></canvas></div>
-      </section>
-      <section class="chart-card">
-        <div class="chart-header">
-          <div>
-            <h3 class="chart-title">Distribución por Año de Egreso</h3>
-            <p class="chart-subtitle">Cohortes representadas en la base de datos</p>
-          </div>
-        </div>
-        <div class="chart-container"><canvas id="resumen-chart-anio"></canvas></div>
-      </section>
-    </div>
-
     <section class="rg-family">
       <div class="section-heading">
         <h3>Indicadores principales con cruces</h3>
@@ -167,48 +139,6 @@ export async function loadResumenPage(container, data) {
       ${charts}
     </section>
   `;
-
-  // Gráficos de composición
-  const tipoCounts = window.DataLoader.countBy(data, ['Programa']);
-  const tipoEntries = [...tipoCounts.entries()].sort((a, b) => b[1] - a[1]);
-  if (tipoEntries.length && window.Charts) {
-    window.Charts.createHorizontalBarChart(
-      'resumen-chart-tipo',
-      tipoEntries.map(e => e[0]),
-      [{
-        label: 'Egresados',
-        data: tipoEntries.map(e => e[1]),
-        backgroundColor: '#000000',
-        borderColor: '#000000'
-      }],
-      {
-        plugins: {
-          legend: { display: false },
-          datalabels: { display: true, percentOfTotal: data.length }
-        }
-      }
-    );
-  }
-
-  const anioCounts = window.DataLoader.countBy(data, ['Año de Egreso']);
-  const anioEntries = [...anioCounts.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
-  if (anioEntries.length && window.Charts) {
-    window.Charts.createBarChart(
-      'resumen-chart-anio',
-      anioEntries.map(e => e[0]),
-      [{
-        label: 'Egresados',
-        data: anioEntries.map(e => e[1]),
-        backgroundColor: '#000000'
-      }],
-      {
-        plugins: {
-          legend: { display: false },
-          datalabels: { display: true, percentOfTotal: data.length }
-        }
-      }
-    );
-  }
 
   if (topQuestions.length) initQuestionCards(container);
 }

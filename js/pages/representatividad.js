@@ -255,6 +255,31 @@ export async function loadRepresentatividadPage(container, data) {
       </div>
     </section>
 
+    <div class="chart-grid" style="margin-bottom: 22px;">
+      <section class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Composición muestral por Tipo de Programa (Columna F)</h3>
+            <p class="chart-subtitle">Participación de los egresados encuestados según tipo de programa</p>
+          </div>
+        </div>
+        <div class="chart-container"><canvas id="ficha-chart-tipo"></canvas></div>
+      </section>
+      <section class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="chart-title">Composición muestral por Año de Egreso</h3>
+            <p class="chart-subtitle">Cohortes representadas en la base de datos</p>
+          </div>
+        </div>
+        <div class="chart-container"><canvas id="ficha-chart-anio"></canvas></div>
+        <p class="rg-note" style="padding: 8px 4px 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#DCB17C;margin-right:5px;vertical-align:middle;"></span><strong>2012–2021:</strong> Exclusivo Doctorado (n = 15 de N = 308; sin egresados en 2023–2025)</span>
+          <span><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#000000;margin-right:5px;vertical-align:middle;"></span><strong>2023–2025:</strong> Segunda Especialidad, Maestría y Diplomado (n = 511)</span>
+        </p>
+      </section>
+    </div>
+
     <div class="tables-grid" style="margin-bottom: 22px;">
       <section class="card table-card">
         <div class="section-heading" style="margin-top: 0;">
@@ -264,6 +289,9 @@ export async function loadRepresentatividadPage(container, data) {
         <div class="chart-container" style="height: 340px;">
           <canvas id="ficha-chart-anio-cruce"></canvas>
         </div>
+        <p class="rg-note" style="padding: 8px 4px 0;">
+          Cohortes <strong>2012–2021</strong>: Doctorado (universo SIIU de doctorados históricos). Cohortes <strong>2023–2025</strong>: Segunda Especialidad, Maestría y Diplomado.
+        </p>
       </section>
 
       <section class="card table-card">
@@ -350,6 +378,54 @@ export async function loadRepresentatividadPage(container, data) {
       ${extraTables}
     </div>
   `;
+
+  // Gráficos de composición de la muestra (Tipo de Programa y Año de Egreso)
+  const tipoEntriesChart = [...countByTipoAll.entries()].sort((a, b) => b[1] - a[1]);
+  if (tipoEntriesChart.length && window.Charts) {
+    window.Charts.createHorizontalBarChart(
+      'ficha-chart-tipo',
+      tipoEntriesChart.map(e => e[0]),
+      [{
+        label: 'Egresados',
+        data: tipoEntriesChart.map(e => e[1]),
+        backgroundColor: '#000000',
+        borderColor: '#000000'
+      }],
+      {
+        plugins: {
+          legend: { display: false },
+          datalabels: { display: true, percentOfTotal: data.length }
+        }
+      }
+    );
+  }
+
+  const anioEntriesChart = [...countByAnioMuestra.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
+  if (anioEntriesChart.length && window.Charts) {
+    window.Charts.createBarChart(
+      'ficha-chart-anio',
+      anioEntriesChart.map(e => e[0]),
+      [{
+        label: 'Egresados',
+        data: anioEntriesChart.map(e => e[1]),
+        backgroundColor: anioEntriesChart.map(e => (Number(e[0]) <= 2021 ? '#DCB17C' : '#000000')),
+        borderColor: anioEntriesChart.map(e => (Number(e[0]) <= 2021 ? '#DCB17C' : '#000000'))
+      }],
+      {
+        plugins: {
+          legend: { display: false },
+          datalabels: { display: true, percentOfTotal: data.length },
+          tooltip: {
+            callbacks: {
+              afterLabel: ctx => (Number(ctx.label) <= 2021
+                ? 'Cohortes exclusivas de Doctorado'
+                : 'Segunda Especialidad, Maestría y Diplomado')
+            }
+          }
+        }
+      }
+    );
+  }
 
   // Gráfico comparativo por Año de Egreso
   const chartYears = [...allYears].sort((a, b) => Number(a) - Number(b));
